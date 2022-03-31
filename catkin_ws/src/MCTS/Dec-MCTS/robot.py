@@ -1,0 +1,54 @@
+import rospy
+from std_msgs.msg import String
+from geometry_msgs.msg import Point
+
+
+class Robot(object):
+    def __init__(self, robot_id, start_loc, goal_loc, time_interval, env):
+        self.robot_id = robot_id
+        self.start_loc = start_loc
+        self.goal_loc = goal_loc
+        self.loc = start_loc
+        self.loc_log = [start_loc]
+        self.observations_list = []
+        self.time_interval = time_interval
+        self.env = None
+        self.pub = rospy.Publisher('robot_loc_' + robot_id, Point, queue_size=10)
+        rospy.init_node('robot_' + robot_id, anonymous=True)
+        self.rate = rospy.Rate(1 / time_interval)
+
+    def register_env(self, env):
+        '''
+        Associates an Environment object with the robot
+        '''
+        self.env = env
+
+    #TODO
+    def get_time(self):
+        pass
+
+    def get_observations(self):
+        '''
+        Return a dictionary of N,E,S,W and whether there
+        is a wall in that direction from the robot's current
+        location
+        '''
+        return self.env.get_walls_from_loc(self.loc)
+
+    def move(self, direction):
+        '''
+        Move one step in direction passed as argument
+        if fail due to obstructing wall from get_observations()
+        stay in same location, update log
+        '''
+
+    def update(self):
+        '''
+        Move to next position, update observations, update locations, run MCTS,
+        publish to ROS topic
+        '''
+
+    def listener(self):
+        '''
+        Implement timer listener at frequency 1/time_interval to call to update()
+        '''
