@@ -1,5 +1,4 @@
 import math
-from enum import Enum, auto
 
 import local_sim
 import robot
