@@ -42,7 +42,7 @@ class Robot(object):
         stay in same location, update log
         '''
 
-    def update(self):
+    def update(self,execute_action=True):
         '''
         Move to next position, update observations, update locations, run MCTS,
         publish to ROS topic
