@@ -27,11 +27,11 @@ class Agent_State():
 
 
 class Agent_Info():
-    def __init__(self, id, state, probs, timestamp):
+    def __init__(self, robot_id, state, probs, timestamp):
         self.state = state
         self.probs = probs
         self.time = timestamp
-        self.id = id
+        self.robot_id = robot_id
 
     def select_random_plan(self):
         plan, _ = np.random.choice(self.probs.keys, p=self.probs.values).copy()
@@ -57,6 +57,7 @@ class DecMCTS_Agent(robot.Robot):
         self.executed_action_last_update = True
         self.tree = None
         self.Xrn = []
+        self.reception_queue = []
 
     # TODO: listen for plans from other agents
 
@@ -80,6 +81,19 @@ class DecMCTS_Agent(robot.Robot):
             probs[x] = 1 / len(self.Xrn)
         return probs
 
+    def package_comms(self, probs):
+        return Agent_Info(self.robot_id,Agent_State(self.loc,self.observations_list),probs,self.get_time())
+
+    def unpack_comms(self):
+        for message in self.reception_queue:
+            id = message.robot_id
+            if id in self.other_agent_info.keys():
+                # If fresh message
+                if message.timestamp >= self.other_agent_info[id]:
+                    self.other_agent_info[id] = message
+            else:
+                self.other_agent_info[id] = message
+        self.reception_queue = []
     # Execute_movement should be true if this is a move step, rather than just part of the computation
     def update(self, execute_action=True):
         '''
@@ -99,10 +113,11 @@ class DecMCTS_Agent(robot.Robot):
         for _ in range(t_n):
             self.growSearchTree(self.plan_growth_iterations)
             self.update_distribution(probs)
-            # TODO communication transmit/receive here
+            # TODO actually send this message
+            message = self.package_comms(probs)
+
+            self.unpack_comms()
             # TODO optionally clean up other-agent-plans
-            # To communicate: an agent_info object with our info and probs
-            # When receive: override or add the new agent_info object according to the id
             self.cool_beta()
 
         if execute_action:
@@ -116,14 +131,13 @@ class DecMCTS_Agent(robot.Robot):
     def sample_other_agents(self):
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
+    #TODO when we receive a message from another robot, append it to the reception queue
     def listener(self):
         '''
         Implement timer listener at frequency 1/time_interval to call to update()
         '''
 
     def update_distribution(self, probs):
-        # TODO sample
-
         for (x, node) in probs.keys:
             q = probs[(x, node)]
             e_f = 0
