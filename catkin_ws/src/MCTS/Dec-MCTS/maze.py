@@ -1,17 +1,18 @@
 from enum import Enum, auto
 
 class Maze():
-    def simulate_i_steps(self,i, agent_id, policy):
+    def simulate_i_steps(self,steps, agent_id, policy):
         valid_policy = True  # If policy conflicts with facts, end at last valid position and default
-        if len(policy) > i and valid_policy:
-            if self.valid_action(agent_id, policy[i]):
-                self.execute_action(agent_id, policy[i])
-            else:
-                valid_policy = False
+        for i in range(steps):
+            if i < len(policy) and valid_policy:
+                if self.valid_action(agent_id, policy[i]):
+                    self.execute_action(agent_id, policy[i])
+                else:
+                    valid_policy = False
 
             # Inverse so that changing policy to invalid immediately jumps here
-        if not (len(policy) > i and valid_policy):
-            self.execute_default_action(agent_id)
+            if not (i < len(policy) and valid_policy):
+                self.execute_default_action(agent_id)
 
     def valid_action(self, agent_id, action):
         pass

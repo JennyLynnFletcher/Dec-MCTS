@@ -28,10 +28,10 @@ class Agent_State():
 
 class Agent_Info():
     def __init__(self, robot_id, state, probs, timestamp):
-        self.state = state
-        self.probs = probs
-        self.time = timestamp
-        self.robot_id = robot_id
+        self.state = state # Agent_State
+        self.probs = probs # dict
+        self.time = timestamp # int
+        self.robot_id = robot_id # arbitrary
 
     def select_random_plan(self):
         plan, _ = np.random.choice(self.probs.keys, p=self.probs.values).copy()
