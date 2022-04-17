@@ -13,7 +13,7 @@ class Robot(object):
         self.observations_list = []
         self.time_interval = time_interval
         self.env = None
-        self.pub = rospy.Publisher('robot_loc_' + robot_id, Point, queue_size=10)
+        self.pub_loc = rospy.Publisher('robot_loc_' + robot_id, Point, queue_size=10)
         rospy.init_node('robot_' + robot_id, anonymous=True)
         self.rate = rospy.Rate(1 / time_interval)
 
@@ -41,6 +41,20 @@ class Robot(object):
         if fail due to obstructing wall from get_observations()
         stay in same location, update log
         '''
+        if direction == N and not self.observations_list[-1]['N']:
+            (x,y) = self.loc
+            self.loc = (x, y+1)
+        elif direction == E and not self.observations_list[-1]['E']:
+            (x,y) = self.loc
+            self.loc = (x+1, y)
+        elif direction == S and not self.observations_list[-1]['S']:
+            (x,y) = self.loc
+            self.loc = (x, y-1)
+        elif direction == W and not self.observations_list[-1]['W']:
+            (x,y) = self.loc
+            self.loc = (x-1, y)
+            
+        self.observations_list.append(self.loc)
 
     def update(self,execute_action=True):
         '''

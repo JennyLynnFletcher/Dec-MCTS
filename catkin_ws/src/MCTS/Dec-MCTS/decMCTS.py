@@ -28,10 +28,10 @@ class Agent_State():
 
 class Agent_Info():
     def __init__(self, robot_id, state, probs, timestamp):
-        self.state = state
-        self.probs = probs
-        self.time = timestamp
-        self.robot_id = robot_id
+        self.state = state #Type of Agent_State
+        self.probs = probs #Dictionary: use JSON
+        self.time = timestamp #integer - number of times update called with execute action True
+        self.robot_id = robot_id #UUID
 
     def select_random_plan(self):
         plan, _ = np.random.choice(self.probs.keys, p=self.probs.values).copy()
@@ -58,6 +58,8 @@ class DecMCTS_Agent(robot.Robot):
         self.tree = None
         self.Xrn = []
         self.reception_queue = []
+        #TODO create message type for observations
+        self.pub_obs = rospy.Publisher('robot_obs_' + robot_id, Point, queue_size=10)
 
     # TODO: listen for plans from other agents
 
@@ -113,7 +115,7 @@ class DecMCTS_Agent(robot.Robot):
         for _ in range(t_n):
             self.growSearchTree(self.plan_growth_iterations)
             self.update_distribution(probs)
-            # TODO actually send this message
+            # TODO actually send this message. Agent_info
             message = self.package_comms(probs)
 
             self.unpack_comms()
