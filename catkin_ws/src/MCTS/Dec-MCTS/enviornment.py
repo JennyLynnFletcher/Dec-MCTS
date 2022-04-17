@@ -1,6 +1,7 @@
 import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
+from maze import Action
 
 class Environment():
     def __init__(self, width, height, walls, start, goal, render_interval=0.5):
@@ -25,6 +26,13 @@ class Environment():
         return a dictionary of N,E,S,W and whether there
         is a wall in that direction from loc
         '''
+        x, y = loc
+        return {
+            Action.UP:    self.walls[x, y - 1] == 0,
+            Action.DOWN:  self.walls[x, y + 1] == 0,
+            Action.LEFT:  self.walls[x - 1, y] == 0,
+            Action.RIGHT: self.walls[x + 1, y] == 0
+        }
 
     def render(self):
         '''
