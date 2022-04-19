@@ -1,7 +1,13 @@
 import rospy
+from scipy import sparse
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
 from maze import Action
+
+white = (255, 255, 255)
+grey = (100, 100, 100)
+black = (0, 0, 0)
+
 
 class Environment():
     def __init__(self, width, height, walls, start, goal, render_interval=0.5):
@@ -14,6 +20,16 @@ class Environment():
         self.timestep = 0
         self.complete = False
         self.robot_list = []  # Tuple of robot ID and location
+        self.grid_size = 10
+
+        global pygame
+        pygame = __import__('pygame', globals(), locals())
+        # import pygame
+        pygame.init()
+        self.gameDisplay = pygame.display.set_mode((1000, 1000))
+        self.gameDisplay.fill(black)
+        self.pixAr = pygame.PixelArray(self.gameDisplay)
+        self.render = True
 
     def add_robot(self, robot):
         '''
@@ -36,8 +52,22 @@ class Environment():
 
     def render(self):
         '''
-        render
+        render stuff
+        requires testing
         '''
+
+        self.gameDisplay.fill(grey)
+
+        for path_y, path_x, _ in zip(*sparse.find(self.walls)):
+            pygame.draw.rect(self.gameDisplay, white, (
+                (path_x - 0.5) * self.grid_size,
+                (path_y - 0.5) * self.grid_size,
+                (path_x + 0.5) * self.grid_size,
+                (path_y + 0.5) * self.grid_size), width=0)
+
+        for _, pos in self.robot_list:
+            pygame.draw.circle(self.gameDisplay, black, pos * self.grid_size, 0.3 * self.grid_size)
+        pygame.display.update()
 
     def update_loc(self, loc_msg):
         '''
