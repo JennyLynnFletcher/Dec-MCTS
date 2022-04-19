@@ -13,25 +13,24 @@ from scipy import stats
 import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
+import pickle
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.5
 num_distribution_samples = 50
 alpha = 0.01
 
-
 class Agent_State():
     def __init__(self, location, observations):
         self.loc = location
         self.obs = observations
-
 
 class Agent_Info():
     def __init__(self, robot_id, state, probs, timestamp):
         self.state = state #Type of Agent_State
         self.probs = probs #Dictionary: use JSON
         self.time = timestamp #integer - number of times update called with execute action True
-        self.robot_id = robot_id #UUID
+        self.robot_id = robot_id #UUID      
 
     def select_random_plan(self):
         plan, _ = np.random.choice(self.probs.keys, p=self.probs.values).copy()
@@ -58,8 +57,8 @@ class DecMCTS_Agent(robot.Robot):
         self.tree = None
         self.Xrn = []
         self.reception_queue = []
-        #TODO create message type for observations
-        self.pub_obs = rospy.Publisher('robot_obs_' + robot_id, Point, queue_size=10)
+        self.pub_obs = rospy.Publisher('robot_obs', String, queue_size=10)
+        self.update_iterations = 0
 
     # TODO: listen for plans from other agents
 
@@ -84,25 +83,27 @@ class DecMCTS_Agent(robot.Robot):
         return probs
 
     def package_comms(self, probs):
-        return Agent_Info(self.robot_id,Agent_State(self.loc,self.observations_list),probs,self.get_time())
+        return pickle.dumps(Agent_Info(self.robot_id,Agent_State(self.loc,self.observations_list),probs,self.get_time()))
 
     def unpack_comms(self):
-        for message in self.reception_queue:
-            id = message.robot_id
-            if id in self.other_agent_info.keys():
+        for message_str in self.reception_queue:
+            message = pickle.loads(message_str)
+            robot_id = message.robot_id
+            if robot_id in self.other_agent_info.keys():
                 # If fresh message
-                if message.timestamp >= self.other_agent_info[id]:
-                    self.other_agent_info[id] = message
+                if message.timestamp >= self.other_agent_info[robot_id]:
+                    self.other_agent_info[robot_id] = message
             else:
-                self.other_agent_info[id] = message
+                self.other_agent_info[robot_id] = message
         self.reception_queue = []
     # Execute_movement should be true if this is a move step, rather than just part of the computation
+    
     def update(self, execute_action=True):
         '''
         Move to next position, update observations, update locations, run MCTS,
         publish to ROS topic
         '''
-
+        self.update_iterations += 1
         if self.executed_action_last_update:
             self.reset_tree()
             self.beta = 0.1
@@ -114,9 +115,9 @@ class DecMCTS_Agent(robot.Robot):
 
         for _ in range(t_n):
             self.growSearchTree(self.plan_growth_iterations)
-            self.update_distribution(probs)
-            # TODO actually send this message. Agent_info
+            self.update_distribution(probs)       
             message = self.package_comms(probs)
+            self.pub_obs.publish(message)
 
             self.unpack_comms()
             # TODO optionally clean up other-agent-plans
@@ -133,11 +134,14 @@ class DecMCTS_Agent(robot.Robot):
     def sample_other_agents(self):
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
-    #TODO when we receive a message from another robot, append it to the reception queue
-    def listener(self):
-        '''
-        Implement timer listener at frequency 1/time_interval to call to update()
-        '''
+    def control_loop(self):
+        rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
+        
+        timer = rospy.Timer(rospy.Duration(5), update, self.update_iterations%5 == 0)
+
+        rospy.spin()    
+        timer.shutdown()
+        
 
     def update_distribution(self, probs):
         for (x, node) in probs.keys:
