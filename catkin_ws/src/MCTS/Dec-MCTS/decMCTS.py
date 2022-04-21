@@ -61,6 +61,7 @@ class DecMCTS_Agent(robot.Robot):
                  plan_growth_iterations=20,
                  distribution_sample_iterations=50,
                  determinization_iterations=5,
+                 out_of_date_timeout=None,
                  *args, **kwargs):
         super(DecMCTS_Agent, self).__init__(*args, **kwargs)
         self.horizon = horizon
@@ -73,6 +74,7 @@ class DecMCTS_Agent(robot.Robot):
         self.plan_growth_iterations = plan_growth_iterations
         self.determinization_iterations = determinization_iterations
         self.distribution_sample_iterations = distribution_sample_iterations
+        self.out_of_date_timeout = out_of_date_timeout
 
     # TODO: listen for plans from other agents
 
@@ -104,10 +106,15 @@ class DecMCTS_Agent(robot.Robot):
             id = message.robot_id
             if id in self.other_agent_info.keys():
                 # If fresh message
-                if message.timestamp >= self.other_agent_info[id]:
+                if message.timestamp >= self.other_agent_info[id].time:
                     self.other_agent_info[id] = message
             else:
                 self.other_agent_info[id] = message
+        time = self.get_time()
+        # Filter out-of-date messages
+        if self.out_of_date_timeout is not None:
+            self.other_agent_info = {k: v for k, v in self.other_agent_info if
+                                     v.time + self.out_of_date_timeout >= time}
         self.reception_queue = []
 
     # Execute_movement should be true if this is a move step, rather than just part of the computation
