@@ -164,7 +164,7 @@ class DecMCTS_Agent(robot.Robot):
     def control_loop(self):
         rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
         
-        timer = rospy.Timer(rospy.Duration(5), update, self.update_iterations%5 == 0)
+        timer = rospy.Timer(rospy.Duration(5), self.update, self.update_iterations%5 == 0)
 
         rospy.spin()    
         timer.shutdown()
