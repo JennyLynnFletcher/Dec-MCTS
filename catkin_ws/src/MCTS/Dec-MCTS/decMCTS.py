@@ -17,7 +17,6 @@ import pickle
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.5
-num_distribution_samples = 50
 alpha = 0.01
 
 class Agent_State():
@@ -25,12 +24,18 @@ class Agent_State():
         self.loc = location
         self.obs = observations
 
+    # TODO add observations (that the child's new position is emtpy) to child state
+    def move(self, action):
+        pass
+
+
 class Agent_Info():
     def __init__(self, robot_id, state, probs, timestamp):
-        self.state = state #Type of Agent_State
-        self.probs = probs #Dictionary
-        self.time = timestamp #integer - number of times update called with execute action True
-        self.robot_id = robot_id #UUID      
+        self.state = state  # Agent_State
+        self.probs = probs  # dict
+        self.time = timestamp  # int
+        self.robot_id = robot_id  # arbitrary
+
 
     def select_random_plan(self):
         plan, _ = np.random.choice(self.probs.keys, p=self.probs.values).copy()
@@ -48,28 +53,42 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
 
 
 class DecMCTS_Agent(robot.Robot):
-    def __init__(self, horizon, plan_growth_iterations, *args, **kwargs):
+    # Runtime is
+    # a + prob_update_iterations *
+    #     (b + c * distribution_sample_iterations * determinization_iterations +
+    #     plan_growth_iterations * ( d + e * determinization_iterations))
+    def __init__(self, horizon,
+                 prob_update_iterations=20,
+                 plan_growth_iterations=20,
+                 distribution_sample_iterations=50,
+                 determinization_iterations=5,
+                 out_of_date_timeout=None,
+                 *args, **kwargs):
         super(DecMCTS_Agent, self).__init__(*args, **kwargs)
         self.horizon = horizon
         self.other_agent_info = {}
-        self.plan_growth_iterations = plan_growth_iterations
         self.executed_action_last_update = True
         self.tree = None
         self.Xrn = []
         self.reception_queue = []
         self.pub_obs = rospy.Publisher('robot_obs', String, queue_size=10)
         self.update_iterations = 0
+        self.prob_update_iterations = prob_update_iterations
+        self.plan_growth_iterations = plan_growth_iterations
+        self.determinization_iterations = determinization_iterations
+        self.distribution_sample_iterations = distribution_sample_iterations
+        self.out_of_date_timeout = out_of_date_timeout
 
     # TODO: listen for plans from other agents
 
-    def growSearchTree(self, iterations):
+    def growSearchTree(self):
 
-        for i in range(iterations):
+        for i in range(self.plan_growth_iterations):
             # Perform Dec_MCTS step
             node = self.tree.select_node(i).expand()
             other_agent_policies = self.sample_other_agents()
             score = node.perform_rollout(self.robot_id, other_agent_policies, self.other_agent_info, self.horizon,
-                                         self.get_time(), self.env.get_goal())
+                                         self.get_time(), self.determinization_iterations, self.env.get_goal())
             node.backpropagate(score, i)
 
     def reset_tree(self):
@@ -85,17 +104,24 @@ class DecMCTS_Agent(robot.Robot):
     def package_comms(self, probs):
         return pickle.dumps(Agent_Info(self.robot_id,Agent_State(self.loc,self.observations_list),probs,self.get_time()))
 
+
     def unpack_comms(self):
         for message_str in self.reception_queue:
             message = pickle.loads(message_str)
             robot_id = message.robot_id
             if robot_id in self.other_agent_info.keys():
                 # If fresh message
-                if message.timestamp >= self.other_agent_info[robot_id]:
-                    self.other_agent_info[robot_id] = message
+                if message.timestamp >= self.other_agent_info[id].time:
+                    self.other_agent_info[id] = message
             else:
-                self.other_agent_info[robot_id] = message
+                self.other_agent_info[id] = message
+        time = self.get_time()
+        # Filter out-of-date messages
+        if self.out_of_date_timeout is not None:
+            self.other_agent_info = {k: v for k, v in self.other_agent_info if
+                                     v.time + self.out_of_date_timeout >= time}
         self.reception_queue = []
+
     # Execute_movement should be true if this is a move step, rather than just part of the computation
     
     def update(self, execute_action=True):
@@ -111,11 +137,10 @@ class DecMCTS_Agent(robot.Robot):
 
         probs = self.get_Xrn_probs()
 
-        t_n = 10  # TODO
-
-        for _ in range(t_n):
-            self.growSearchTree(self.plan_growth_iterations)
-            self.update_distribution(probs)       
+        for _ in range(self.prob_update_iterations):
+            self.growSearchTree()
+            self.update_distribution(probs)
+            # TODO actually send this message
             message = self.package_comms(probs)
             self.pub_obs.publish(message)
 
@@ -131,7 +156,7 @@ class DecMCTS_Agent(robot.Robot):
             self.pub_loc.publish(msg)
 
     def cool_beta(self):
-        self.beta = self.beta*0.9
+        self.beta = self.beta * 0.9
 
     def sample_other_agents(self):
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
@@ -143,22 +168,26 @@ class DecMCTS_Agent(robot.Robot):
 
         rospy.spin()    
         timer.shutdown()
-        
 
     def update_distribution(self, probs):
         for (x, node) in probs.keys:
             q = probs[(x, node)]
             e_f = 0
             e_f_x = 0
-            for i in range(num_distribution_samples):
-                # TODO Do we generate a maze based off of our simulated observations or only what we actually know?
+            for i in range(self.distribution_sample_iterations):
+                # Evaluate nodes based off of what we actually know
                 our_actions, other_actions, our_q, other_qs, our_obs = \
                     uniform_sample_from_all_action_sequences(probs, self.other_agent_info)
-                f = compute_f(self.robot_id, our_actions, other_actions, self.loc, our_obs,
-                              self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal())
+                f = 0
+                f_x = 0
+                for _ in range(self.determinization_iterations):
+                    f += compute_f(self.robot_id, our_actions, other_actions, self.loc, our_obs,
+                                   self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
+                         / self.determinization_iterations
 
-                f_x = compute_f(self.robot_id, x, other_actions, self.loc, node.state.obs,
-                                self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal())
+                    f_x += compute_f(self.robot_id, x, other_actions, self.loc, our_obs,
+                                     self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
+                           / self.determinization_iterations
 
                 e_f += np.prod(other_qs + [our_q]) * f
                 e_f_x += np.prod(other_qs) * f_x
@@ -180,6 +209,7 @@ class DecMCTSNode():
         self.parent = parent
         self.parent_action = parent_action
         self.children = []
+        self.unexplored_actions = self.get_legal_actions()
         self.Xrn = Xrn
 
         # Incremented during backpropagation
@@ -187,14 +217,11 @@ class DecMCTSNode():
         self.discounted_score = 0
         self.last_round_visited = 0
 
-    def is_leaf(self):
-        return len(self.children) == 0
-
     def select_node(self, round_n):
         return self.select_node_d_uct(round_n)
 
     def select_node_d_uct(self, round_n):
-        if self.is_leaf():
+        if not self.is_fully_expanded():
             return self
         else:
             t_js = [child.discounted_visits * math.pow(discount_param, round_n - child.last_round_visited)
@@ -209,7 +236,7 @@ class DecMCTSNode():
 
             return self.children[np.argmax(child_scores)]
 
-    # TODO what legal actions exist for unknown positions
+    # TODO return actions that aren't incompatible with our observations
     def get_legal_actions(self):
         '''
         Modify according to your game or
@@ -222,9 +249,11 @@ class DecMCTSNode():
         '''
         Pick a random legal action.
         '''
+        return random.choice(self.unexplored_actions)
 
     def expand(self):
         action = self.get_stochastic_action()
+        self.unexplored_actions.remove(action)
         next_state = self.state.move(action)
         child_node = DecMCTSNode(next_state, self.depth + 1, parent=self, parent_action=action)
 
@@ -240,9 +269,7 @@ class DecMCTSNode():
         self.parent.backpropagate(score, iteration)
 
     def is_fully_expanded(self):
-        return len(self.children) >= len(self.get_legal_actions())
-
-    # TODO make sure to mark current location as empty!
+        return len(self.unexplored_actions) == 0
 
     def tree_history(self):
         curr_node = self
@@ -256,16 +283,19 @@ class DecMCTSNode():
         node_actions.reverse()
         return start_state, node_actions
 
-    def perform_rollout(self, this_id, other_agent_policies, other_agent_info, horizon, time, goal):
+    def perform_rollout(self, this_id, other_agent_policies, other_agent_info, horizon, time,
+                        determinization_iterations, goal):
 
         horizon_time = time + self.depth + horizon
-
         start_state, node_actions = self.tree_history()
-
         self.Xrn.append((node_actions, self))
 
-        return compute_f(this_id, node_actions, other_agent_policies, start_state.loc, self.state.obs,
-                         other_agent_info, horizon_time, time, goal)
+        avg = 0
+        for _ in range(determinization_iterations):
+            avg += compute_f(this_id, node_actions, other_agent_policies, start_state.loc, self.state.obs,
+                             other_agent_info, horizon_time, time, goal) / determinization_iterations
+
+        return avg
 
 
 def compute_f(our_id, our_policy, other_agent_policies, our_loc, our_obs, other_agent_info, steps, current_time, goal):
