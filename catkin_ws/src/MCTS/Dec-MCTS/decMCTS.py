@@ -22,27 +22,34 @@ c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.95
 alpha = 0.01
 
+
 class Agent_State():
     def __init__(self, location, observations):
         self.loc = location
         self.obs = observations
 
-def move(state, action):
-    x,y = state.loc
+
+def move(loc, action):
+    x, y = loc
     if action == Action.UP:
-        loc = (x, y-1)
+        loc = (x, y - 1)
     elif action == Action.DOWN:
-        loc = (x, y+1)
+        loc = (x, y + 1)
     elif action == Action.LEFT:
-        loc = (x-1, y)
+        loc = (x - 1, y)
     elif action == Action.RIGHT:
-        loc = (x+1, y)
+        loc = (x + 1, y)
     else:
-        loc = (x,y)
+        loc = (x, y)
+    return loc
+
+
+def update_agent_state(state, action):
+    loc = move(state.loc, action)
+    x, y = loc
     obs = state.obs.copy()
-    obs[y,x] = 1
-    return Agent_State(loc,obs)
-        
+    obs[y, x] = 1
+    return Agent_State(loc, obs)
 
 
 class Agent_Info():
@@ -51,7 +58,6 @@ class Agent_Info():
         self.probs = probs  # dict
         self.time = timestamp  # int
         self.robot_id = robot_id  # arbitrary
-
 
     def select_random_plan(self):
         plan, _ = np.random.choice(self.probs.keys, p=self.probs.values).copy()
@@ -95,10 +101,9 @@ class DecMCTS_Agent(robot.Robot):
         self.distribution_sample_iterations = distribution_sample_iterations
         self.out_of_date_timeout = out_of_date_timeout
         self.time = 0
-        
+
     def get_time(self):
         return self.time
-
 
     def growSearchTree(self):
 
@@ -106,13 +111,15 @@ class DecMCTS_Agent(robot.Robot):
             # Perform Dec_MCTS step
             node = self.tree.select_node(i).expand()
             other_agent_policies = self.sample_other_agents()
-            score = node.perform_rollout(self.robot_id, other_agent_policies, self.other_agent_info,self.observations_list, self.horizon,
+            score = node.perform_rollout(self.robot_id, other_agent_policies, self.other_agent_info,
+                                         self.observations_list, self.horizon,
                                          self.get_time(), self.determinization_iterations, self.env.get_goal())
             node.backpropagate(score, i)
 
     def reset_tree(self):
         self.Xrn = []
-        self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0,maze_dims=(self.env.height,self.env.width), Xrn=self.Xrn)
+        self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0,
+                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn)
 
     def get_Xrn_probs(self):
         probs = {}
@@ -121,8 +128,8 @@ class DecMCTS_Agent(robot.Robot):
         return probs
 
     def package_comms(self, probs):
-        return pickle.dumps(Agent_Info(self.robot_id,Agent_State(self.loc,self.observations_list),probs,self.get_time()))
-
+        return pickle.dumps(
+            Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time()))
 
     def unpack_comms(self):
         for message_str in self.reception_queue:
@@ -135,7 +142,7 @@ class DecMCTS_Agent(robot.Robot):
                     self.other_agent_info[id] = message
             else:
                 self.other_agent_info[id] = message
-            self.observations_list = merge_observations(self.observations_list,message.state.obs)
+            self.observations_list = merge_observations(self.observations_list, message.state.obs)
         time = self.get_time()
         # Filter out-of-date messages
         if self.out_of_date_timeout is not None:
@@ -168,10 +175,33 @@ class DecMCTS_Agent(robot.Robot):
 
         if execute_action:
             self.executed_action_last_update = True
-            best_plan,_ = max(probs, key=probs.get)
+            best_plan, _ = max(probs, key=probs.get)
+            print(best_plan[0].name)
+            self.loc = move(self.loc, best_plan[0])
             msg = Point(x=self.loc[0], y=self.loc[1])
             self.pub_loc.publish(msg)
+            self.update_observations_from_location()
 
+    def update_observations_from_location(self):
+        x, y = self.loc
+        walls = self.env.get_walls_from_loc(self.loc)
+        if walls[Action.UP]:
+            self.observations_list[y - 1, x] = 2
+        else:
+            self.observations_list[y - 1, x] = 1
+        if walls[Action.DOWN]:
+            self.observations_list[y + 1, x] = 2
+        else:
+            self.observations_list[y + 1, x] = 1
+        if walls[Action.LEFT]:
+            self.observations_list[y, x - 1] = 2
+        else:
+            self.observations_list[y, x - 1] = 1
+        if walls[Action.RIGHT]:
+            self.observations_list[y, x + 1] = 2
+        else:
+            self.observations_list[y, x + 1] = 1
+        self.observations_list[y, x] = 1
 
     def cool_beta(self):
         self.beta = self.beta * 0.9
@@ -180,17 +210,16 @@ class DecMCTS_Agent(robot.Robot):
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
     def control_loop(self):
-        
+
         def tick_callback(_, execute_action):
             self.time += 1
             self.update(execute_action)
-            
-        
-        rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
-        rospy.Subscriber("tick", Empty, tick_callback, self.update_iterations%5 == 0)
-        #rospy.init_node('Agent' + str(self.robot_id), anonymous=True)
 
-        #rospy.spin()
+        rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
+        rospy.Subscriber("tick", Empty, tick_callback, self.update_iterations % 5 == 0)
+        # rospy.init_node('Agent' + str(self.robot_id), anonymous=True)
+
+        # rospy.spin()
 
     def update_distribution(self, probs):
         for (x, node) in probs.keys:
@@ -204,11 +233,11 @@ class DecMCTS_Agent(robot.Robot):
                 f = 0
                 f_x = 0
                 for _ in range(self.determinization_iterations):
-                    f += compute_f(self.robot_id, our_actions, other_actions,self.observations_list, self.loc, our_obs,
+                    f += compute_f(self.robot_id, our_actions, other_actions, self.observations_list, self.loc, our_obs,
                                    self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
                          / self.determinization_iterations
 
-                    f_x += compute_f(self.robot_id, x, other_actions,self.observations_list, self.loc, our_obs,
+                    f_x += compute_f(self.robot_id, x, other_actions, self.observations_list, self.loc, our_obs,
                                      self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
                            / self.determinization_iterations
 
@@ -226,7 +255,7 @@ class DecMCTS_Agent(robot.Robot):
 
 
 class DecMCTSNode():
-    def __init__(self, state, depth,maze_dims, Xrn, parent=None, parent_action=None ):
+    def __init__(self, state, depth, maze_dims, Xrn, parent=None, parent_action=None):
         self.depth = depth
         self.state = state
         self.parent = parent
@@ -240,7 +269,6 @@ class DecMCTSNode():
         self.discounted_score = 0
         self.last_round_visited = 0
         self.unexplored_actions = self.get_legal_actions()
-
 
     def select_node(self, round_n):
         return self.select_node_d_uct(round_n)
@@ -268,15 +296,15 @@ class DecMCTSNode():
         possible actions from current state.
         Returns a list.
         '''
-        x,y = self.state.loc
+        x, y = self.state.loc
         actions = []
-        if self.state.obs[y - 1,x] != 2 and y - 1 >= 0:
+        if self.state.obs[y - 1, x] != 2 and y - 1 >= 0:
             actions.append(Action.UP)
-        if self.state.obs[y + 1,x] != 2 and y + 1 < self.maze_dims[0]:
+        if self.state.obs[y + 1, x] != 2 and y + 1 < self.maze_dims[0]:
             actions.append(Action.DOWN)
-        if self.state.obs[y, x-1] != 2 and x - 1 >= 0:
+        if self.state.obs[y, x - 1] != 2 and x - 1 >= 0:
             actions.append(Action.LEFT)
-        if self.state.obs[y, x+1] != 2 and x + 1 < self.maze_dims[1]:
+        if self.state.obs[y, x + 1] != 2 and x + 1 < self.maze_dims[1]:
             actions.append(Action.DOWN)
         return actions
 
@@ -289,8 +317,9 @@ class DecMCTSNode():
     def expand(self):
         action = self.get_stochastic_action()
         self.unexplored_actions.remove(action)
-        next_state = move(self.state,action)
-        child_node = DecMCTSNode(next_state, self.depth + 1, self.maze_dims,self.Xrn, parent=self, parent_action=action)
+        next_state = update_agent_state(self.state, action)
+        child_node = DecMCTSNode(next_state, self.depth + 1, self.maze_dims, self.Xrn, parent=self,
+                                 parent_action=action)
 
         self.children.append(child_node)
         return child_node
@@ -319,7 +348,7 @@ class DecMCTSNode():
         node_actions.reverse()
         return start_state, node_actions
 
-    def perform_rollout(self, this_id, other_agent_policies, other_agent_info,real_obs, horizon, time,
+    def perform_rollout(self, this_id, other_agent_policies, other_agent_info, real_obs, horizon, time,
                         determinization_iterations, goal):
 
         horizon_time = time + self.depth + horizon
@@ -328,13 +357,14 @@ class DecMCTSNode():
 
         avg = 0
         for _ in range(determinization_iterations):
-            avg += compute_f(this_id, node_actions, other_agent_policies,real_obs, start_state.loc, self.state.obs,
+            avg += compute_f(this_id, node_actions, other_agent_policies, real_obs, start_state.loc, self.state.obs,
                              other_agent_info, horizon_time, time, goal) / determinization_iterations
 
         return avg
 
 
-def compute_f(our_id, our_policy, other_agent_policies,real_obs, our_loc, our_obs, other_agent_info, steps, current_time, goal):
+def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
+              current_time, goal):
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
@@ -350,5 +380,6 @@ def compute_f(our_id, our_policy, other_agent_policies,real_obs, our_loc, our_ob
     actuated_score = maze.get_score(real_obs)
     return actuated_score - null_score
 
-def merge_observations(obs1,obs2):
+
+def merge_observations(obs1, obs2):
     return obs1.maximum(obs2)
