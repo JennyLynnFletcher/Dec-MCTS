@@ -12,16 +12,10 @@ class Robot(object):
         self.loc_log = [start_loc]
         self.observations_list = []
         self.time_interval = time_interval
-        self.env = None
+        self.env = env
         self.pub_loc = rospy.Publisher('robot_loc_' + robot_id, Point, queue_size=10)
         rospy.init_node('Agent', anonymous=True)
         self.rate = rospy.Rate(1 / time_interval)
-
-    def register_env(self, env):
-        '''
-        Associates an Environment object with the robot
-        '''
-        self.env = env
 
     #TODO
     def get_time(self):
