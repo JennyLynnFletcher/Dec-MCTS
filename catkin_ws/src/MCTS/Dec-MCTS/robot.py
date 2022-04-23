@@ -16,10 +16,6 @@ class Robot(object):
         rospy.init_node('Agent', anonymous=True)
         self.rate = rospy.Rate(5)
 
-    #TODO
-    def get_time(self):
-        pass
-
     def get_observations(self):
         '''
         Return a dictionary of N,E,S,W and whether there

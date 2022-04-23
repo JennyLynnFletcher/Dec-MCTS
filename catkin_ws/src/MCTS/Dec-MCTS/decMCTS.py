@@ -92,6 +92,9 @@ class DecMCTS_Agent(robot.Robot):
         self.distribution_sample_iterations = distribution_sample_iterations
         self.out_of_date_timeout = out_of_date_timeout
         self.time = 0
+        
+    def get_time(self):
+        return self.time
 
 
     def growSearchTree(self):
