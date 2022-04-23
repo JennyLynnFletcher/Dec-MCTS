@@ -2,6 +2,7 @@ import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
 
+import scipy
 
 class Robot(object):
     def __init__(self, robot_id, start_loc, goal_loc, env):
@@ -10,7 +11,7 @@ class Robot(object):
         self.goal_loc = goal_loc
         self.loc = start_loc
         self.loc_log = [start_loc]
-        self.observations_list = []
+        self.observations_list = scipy.sparse.dok_matrix((env.height,env.width))
         self.env = env
         self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id), Point, queue_size=10)
         #rospy.init_node('Agent' + str(robot_id), anonymous=True)
