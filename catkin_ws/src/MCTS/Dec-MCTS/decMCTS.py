@@ -11,6 +11,7 @@ from collections import defaultdict
 from scipy import stats
 from maze import Action
 from scipy import sparse
+from pprint import pprint
 
 import rospy
 from std_msgs.msg import String, Empty
@@ -229,7 +230,6 @@ class DecMCTSNode():
         self.parent = parent
         self.parent_action = parent_action
         self.children = []
-        self.unexplored_actions = self.get_legal_actions()
         self.Xrn = Xrn
         self.maze_dims = maze_dims
 
@@ -237,6 +237,8 @@ class DecMCTSNode():
         self.discounted_visits = 0
         self.discounted_score = 0
         self.last_round_visited = 0
+        self.unexplored_actions = self.get_legal_actions()
+
 
     def select_node(self, round_n):
         return self.select_node_d_uct(round_n)
