@@ -13,8 +13,8 @@ from maze import Action
 from scipy import sparse
 
 import rospy
-from std_msgs.msg import String
-from geometry_msgs.msg import Point, Empty
+from std_msgs.msg import String, Empty
+from geometry_msgs.msg import Point
 import pickle
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
@@ -184,7 +184,7 @@ class DecMCTS_Agent(robot.Robot):
             
         
         rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
-        rospy.Subscriber("tick", String, tick_callback, self.update_iterations%5 == 0)
+        rospy.Subscriber("tick", Empty, tick_callback, self.update_iterations%5 == 0)
 
         rospy.spin()    
         timer.shutdown()

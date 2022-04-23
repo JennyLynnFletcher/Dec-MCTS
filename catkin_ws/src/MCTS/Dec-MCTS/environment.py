@@ -3,6 +3,7 @@ from scipy import sparse
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
 from maze import Action
+import maze_gen
 from time import sleep, perf_counter
 from threading import Thread
 
@@ -17,12 +18,12 @@ class Environment():
     def __init__(self, width, height, goal, num_robots, render_interval=0.5):
         self.width = width
         self.height = height
-        self.walls = generate_maze(self.height, self.width)
+        self.walls = maze_gen.generate_maze(self.height, self.width)
         self.goal = goal
         self.render_interval = render_interval
         self.timestep = 0
         self.complete = False
-        self.robot_list = []
+        self.robot_list = {}
         self.grid_size = 10
         self.num_robots = num_robots
 
@@ -41,12 +42,13 @@ class Environment():
         Add to self.robot_list
         '''
         def task():
-            r = decMCTS.DecMCTS_Agent(i, start_loc, goal_loc, self)
+            r = decMCTS.DecMCTS_Agent(robot_id=i, start_loc=start_loc, goal_loc=goal_loc, env=self)
             r.control_loop()
         
-        for i in range(num_robots):
+        for i in range(self.num_robots):
             self.robot_list[i] = (start_loc, goal_loc)
             thread = Thread(target=task)
+            thread.start()
             thread.join()            
         
 
@@ -99,4 +101,4 @@ class Environment():
         '''
         rospy.init_node('Environment', anonymous=True)
         for (robot_id, _) in self.robot_list:
-            rospy.Subscriber('robot_loc_' + robot_id, Point, self.update_loc, robot_id)
+            rospy.Subscriber('robot_loc_' + str(robot_id), Point, self.update_loc, robot_id)

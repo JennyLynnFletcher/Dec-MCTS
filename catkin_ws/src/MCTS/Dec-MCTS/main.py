@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+import rospy
 from threading import Thread
 from std_msgs.msg import Empty
 import time

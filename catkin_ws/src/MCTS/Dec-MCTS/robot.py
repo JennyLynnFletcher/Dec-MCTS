@@ -12,9 +12,9 @@ class Robot(object):
         self.loc_log = [start_loc]
         self.observations_list = []
         self.env = env
-        self.pub_loc = rospy.Publisher('robot_loc_' + robot_id, Point, queue_size=10)
-        rospy.init_node('Agent', anonymous=True)
-        self.rate = rospy.Rate(5)
+        self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id), Point, queue_size=10)
+        #rospy.init_node('Agent' + str(robot_id), anonymous=True)
+        #self.rate = rospy.Rate(5)
 
     def get_observations(self):
         '''
