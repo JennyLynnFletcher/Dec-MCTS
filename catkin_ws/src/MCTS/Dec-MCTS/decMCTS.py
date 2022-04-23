@@ -259,7 +259,7 @@ class DecMCTSNode():
                 c = 2 * math.sqrt(max(np.log(t_d), 0) / t_js[i])
                 child_scores.append(f + c_param * c)
 
-            return self.children[np.argmax(child_scores)]
+            return self.children[np.argmax(np.asarray(child_scores))]
 
     def get_legal_actions(self):
         '''
