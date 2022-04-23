@@ -48,6 +48,7 @@ class Maze:
         return self.try_action(agent_id, action)
 
     def get_score(self, agent_obs, comms_aware=False):
+        print(sparse.lil_matrix(agent_obs).toarray())
         w = self.walls.shape[1]
         h = self.walls.shape[0]
         positions_all = list(self.agent_positions.values())

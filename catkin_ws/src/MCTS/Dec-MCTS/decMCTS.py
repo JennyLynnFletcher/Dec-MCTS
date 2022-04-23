@@ -102,6 +102,10 @@ class DecMCTS_Agent(robot.Robot):
         self.out_of_date_timeout = out_of_date_timeout
         self.time = 0
 
+        self.observations_list = sparse.dok_matrix((self.env.height,self.env.width))
+        self.update_observations_from_location()
+
+
     def get_time(self):
         return self.time
 

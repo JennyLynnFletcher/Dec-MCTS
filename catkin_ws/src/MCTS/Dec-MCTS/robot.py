@@ -11,7 +11,6 @@ class Robot(object):
         self.goal_loc = goal_loc
         self.loc = start_loc
         self.loc_log = [start_loc]
-        self.observations_list = scipy.sparse.dok_matrix((env.height,env.width))
         self.env = env
         self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id), Point, queue_size=10)
         #rospy.init_node('Agent' + str(robot_id), anonymous=True)
