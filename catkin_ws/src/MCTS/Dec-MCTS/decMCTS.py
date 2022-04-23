@@ -28,7 +28,7 @@ class Agent_State():
 class Agent_Info():
     def __init__(self, robot_id, state, probs, timestamp):
         self.state = state #Type of Agent_State
-        self.probs = probs #Dictionary: use JSON
+        self.probs = probs #Dictionary
         self.time = timestamp #integer - number of times update called with execute action True
         self.robot_id = robot_id #UUID      
 
@@ -127,6 +127,8 @@ class DecMCTS_Agent(robot.Robot):
             self.executed_action_last_update = True
             best_plan,_ = max(probs, key=probs.get)
             #TODO actualy execute plan
+            msg = Point(x=self.loc[0], y=self.loc[1])
+            self.pub_loc.publish(msg)
 
     def cool_beta(self):
         self.beta = self.beta*0.9

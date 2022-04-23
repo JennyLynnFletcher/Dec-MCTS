@@ -13,7 +13,7 @@ class Robot(object):
         self.observations_list = []
         self.time_interval = time_interval
         self.env = None
-        self.pub_loc = rospy.Publisher('robot_loc', Point, queue_size=10)
+        self.pub_loc = rospy.Publisher('robot_loc_' + robot_id, Point, queue_size=10)
         rospy.init_node('Agent', anonymous=True)
         self.rate = rospy.Rate(1 / time_interval)
 
@@ -61,6 +61,9 @@ class Robot(object):
         Move to next position, update observations, update locations, run MCTS,
         publish to ROS topic
         '''
+        msg = Point(x=self.loc[0], y=self.loc[1])
+        self.pub_loc.publish(msg)
+   
 
     def listener(self):
         '''

@@ -19,7 +19,7 @@ class Environment():
         self.render_interval = render_interval
         self.timestep = 0
         self.complete = False
-        self.robot_list = []  # Tuple of robot ID and location
+        self.robot_list = {}  # Tuple of robot ID and location
         self.grid_size = 10
 
         global pygame
@@ -35,7 +35,7 @@ class Environment():
         '''
         Add robot with start location start_loc, goal goal_loc and pass self as env
         Add to self.robot_list
-        '''
+        '''        
 
     def get_walls_from_loc(self, loc):
         '''
@@ -69,11 +69,14 @@ class Environment():
             pygame.draw.circle(self.gameDisplay, black, pos * self.grid_size, 0.3 * self.grid_size)
         pygame.display.update()
 
-    def update_loc(self, loc_msg):
+    def update_loc(self, loc_msg, robot_id):
         '''
         Callback function for robot locations
         Update locations of robots for rendering
         '''
+        x = loc_msg.x
+        y = loc_msg.y
+        self.robot_list[robot_id] = (x,y)
 
     def listener(self):
         '''
