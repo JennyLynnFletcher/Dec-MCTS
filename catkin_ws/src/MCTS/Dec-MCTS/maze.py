@@ -34,6 +34,7 @@ class Maze:
             new_position[0] += 1
         elif action == Action.LEFT:
             new_position[0] -= 1
+        new_position = tuple(new_position)
         if self.walls[new_position]:
             self.agent_positions[agent_id] = new_position
             return True
@@ -47,8 +48,7 @@ class Maze:
         w = self.walls.shape[1]
         h = self.walls.shape[0]
         positions_all = list(self.agent_positions.values())
-
-        explored = agent_obs == 1
+        explored = agent_obs[agent_obs == 1]
 
         total_explorable_area = ((h - 2) * (w - 2) + h + w - 5) / 2
         percent_explored = len(explored) / total_explorable_area
