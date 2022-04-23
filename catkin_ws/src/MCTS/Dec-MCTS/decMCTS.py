@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 import pickle
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
-discount_param = 0.95
+discount_param = 0.90
 alpha = 0.01
 
 
@@ -81,7 +81,7 @@ class DecMCTS_Agent(robot.Robot):
     #     plan_growth_iterations * ( d + e * determinization_iterations))
     def __init__(self, horizon=10,
                  prob_update_iterations=20,
-                 plan_growth_iterations=20,
+                 plan_growth_iterations=30,
                  distribution_sample_iterations=50,
                  determinization_iterations=5,
                  out_of_date_timeout=None,
