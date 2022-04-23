@@ -9,6 +9,8 @@ import numpy as np
 from collections import defaultdict
 
 from scipy import stats
+from maze import Action
+from scipy import sparse
 
 import rospy
 from std_msgs.msg import String
@@ -24,9 +26,20 @@ class Agent_State():
         self.loc = location
         self.obs = observations
 
-    # TODO add observations (that the child's new position is emtpy) to child state
     def move(self, action):
-        pass
+        x,y = self.loc
+        if action == Action.STAY:
+            pass
+        if action == Action.UP:
+            self.loc = (x, y-1)
+        if action == Action.DOWN:
+            self.loc = (x, y+1)
+        if action == Action.LEFT:
+            self.loc = (x-1, y)
+        if action == Action.RIGHT:
+            self.loc = (x+1, y)
+        self.obs[y,x] = 1
+        
 
 
 class Agent_Info():
@@ -79,7 +92,6 @@ class DecMCTS_Agent(robot.Robot):
         self.distribution_sample_iterations = distribution_sample_iterations
         self.out_of_date_timeout = out_of_date_timeout
 
-    # TODO: listen for plans from other agents
 
     def growSearchTree(self):
 
@@ -109,12 +121,14 @@ class DecMCTS_Agent(robot.Robot):
         for message_str in self.reception_queue:
             message = pickle.loads(message_str)
             robot_id = message.robot_id
+            # If seen before
             if robot_id in self.other_agent_info.keys():
                 # If fresh message
                 if message.timestamp >= self.other_agent_info[id].time:
                     self.other_agent_info[id] = message
             else:
                 self.other_agent_info[id] = message
+            self.observations_list = merge_observations(self.observations_list,message.state.obs)
         time = self.get_time()
         # Filter out-of-date messages
         if self.out_of_date_timeout is not None:
@@ -123,7 +137,6 @@ class DecMCTS_Agent(robot.Robot):
         self.reception_queue = []
 
     # Execute_movement should be true if this is a move step, rather than just part of the computation
-    
     def update(self, execute_action=True):
         '''
         Move to next position, update observations, update locations, run MCTS,
@@ -140,20 +153,18 @@ class DecMCTS_Agent(robot.Robot):
         for _ in range(self.prob_update_iterations):
             self.growSearchTree()
             self.update_distribution(probs)
-            # TODO actually send this message
             message = self.package_comms(probs)
             self.pub_obs.publish(message)
 
             self.unpack_comms()
-            # TODO optionally clean up other-agent-plans
             self.cool_beta()
 
         if execute_action:
             self.executed_action_last_update = True
             best_plan,_ = max(probs, key=probs.get)
-            #TODO actualy execute plan
             msg = Point(x=self.loc[0], y=self.loc[1])
             self.pub_loc.publish(msg)
+
 
     def cool_beta(self):
         self.beta = self.beta * 0.9
@@ -203,7 +214,7 @@ class DecMCTS_Agent(robot.Robot):
 
 
 class DecMCTSNode():
-    def __init__(self, state, depth, Xrn, parent=None, parent_action=None):
+    def __init__(self, state, depth,maze_dims, Xrn, parent=None, parent_action=None ):
         self.depth = depth
         self.state = state
         self.parent = parent
@@ -211,6 +222,7 @@ class DecMCTSNode():
         self.children = []
         self.unexplored_actions = self.get_legal_actions()
         self.Xrn = Xrn
+        self.maze_dims = maze_dims
 
         # Incremented during backpropagation
         self.discounted_visits = 0
@@ -236,7 +248,6 @@ class DecMCTSNode():
 
             return self.children[np.argmax(child_scores)]
 
-    # TODO return actions that aren't incompatible with our observations
     def get_legal_actions(self):
         '''
         Modify according to your game or
@@ -244,6 +255,16 @@ class DecMCTSNode():
         possible actions from current state.
         Returns a list.
         '''
+        x,y = self.state.loc
+        actions = []
+        if self.state.obs[y - 1,x] != 2 and y - 1 >= 0:
+            actions.append(Action.UP)
+        if self.state.obs[y + 1,x] != 2 and y + 1 < self.maze_dims[0]:
+            actions.append(Action.DOWN)
+        if self.state.obs[y, x-1] != 2 and x - 1 >= 0:
+            actions.append(Action.LEFT)
+        if self.state.obs[y, x+1] != 2 and x + 1 < self.maze_dims[1]:
+            actions.append(Action.DOWN)
 
     def get_stochastic_action(self):
         '''
@@ -313,3 +334,6 @@ def compute_f(our_id, our_policy, other_agent_policies, our_loc, our_obs, other_
     maze.simulate_i_steps(steps - current_time, our_id, our_policy)
     actuated_score = maze.get_score()
     return actuated_score - null_score
+
+def merge_observations(obs1,obs2):
+    return obs1.maximum(obs2)
