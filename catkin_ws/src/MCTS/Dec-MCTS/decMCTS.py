@@ -19,7 +19,7 @@ from geometry_msgs.msg import Point
 import pickle
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
-discount_param = 0.5
+discount_param = 0.95
 alpha = 0.01
 
 class Agent_State():
@@ -256,7 +256,7 @@ class DecMCTSNode():
             child_scores = []
             for i, child in enumerate(self.children):
                 f = child.discounted_score / child.discounted_visits
-                c = 2 * math.sqrt(np.log(t_d) / t_js[i])
+                c = 2 * math.sqrt(max(np.log(t_d), 0) / t_js[i])
                 child_scores.append(f + c_param * c)
 
             return self.children[np.argmax(child_scores)]
@@ -299,9 +299,10 @@ class DecMCTSNode():
         self.discounted_visits = 1 + \
                                  math.pow(discount_param, iteration - self.last_round_visited) * self.discounted_visits
         self.discounted_score = score + \
-                                np.pow(discount_param, iteration - self.last_round_visited) * self.discounted_score
+                                math.pow(discount_param, iteration - self.last_round_visited) * self.discounted_score
         self.last_round_visited = iteration
-        self.parent.backpropagate(score, iteration)
+        if self.parent is not None:
+            self.parent.backpropagate(score, iteration)
 
     def is_fully_expanded(self):
         return len(self.unexplored_actions) == 0
