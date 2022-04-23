@@ -27,19 +27,21 @@ class Agent_State():
         self.loc = location
         self.obs = observations
 
-    def move(self, action):
-        x,y = self.loc
-        if action == Action.STAY:
-            pass
-        if action == Action.UP:
-            self.loc = (x, y-1)
-        if action == Action.DOWN:
-            self.loc = (x, y+1)
-        if action == Action.LEFT:
-            self.loc = (x-1, y)
-        if action == Action.RIGHT:
-            self.loc = (x+1, y)
-        self.obs[y,x] = 1
+def move(state, action):
+    x,y = state.loc
+    if action == Action.UP:
+        loc = (x, y-1)
+    elif action == Action.DOWN:
+        loc = (x, y+1)
+    elif action == Action.LEFT:
+        loc = (x-1, y)
+    elif action == Action.RIGHT:
+        loc = (x+1, y)
+    else:
+        loc = (x,y)
+    obs = state.obs.copy()
+    obs[y,x] = 1
+    return Agent_State(loc,obs)
         
 
 
@@ -276,6 +278,7 @@ class DecMCTSNode():
             actions.append(Action.LEFT)
         if self.state.obs[y, x+1] != 2 and x + 1 < self.maze_dims[1]:
             actions.append(Action.DOWN)
+        return actions
 
     def get_stochastic_action(self):
         '''
@@ -286,8 +289,8 @@ class DecMCTSNode():
     def expand(self):
         action = self.get_stochastic_action()
         self.unexplored_actions.remove(action)
-        next_state = self.state.move(action)
-        child_node = DecMCTSNode(next_state, self.depth + 1, self.maze_dims, parent=self, parent_action=action)
+        next_state = move(self.state,action)
+        child_node = DecMCTSNode(next_state, self.depth + 1, self.maze_dims,self.Xrn, parent=self, parent_action=action)
 
         self.children.append(child_node)
         return child_node

@@ -36,6 +36,9 @@ class Environment():
         self.pixAr = pygame.PixelArray(self.gameDisplay)
         self.render = True
 
+    def get_goal(self):
+        return self.goal
+
     def add_robot(self, robot_id, start_loc, goal_loc):
         '''
         Add robot with start location start_loc, goal goal_loc and pass self as env
