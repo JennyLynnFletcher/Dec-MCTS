@@ -1,3 +1,4 @@
+import pygame
 import rospy
 from scipy import sparse
 from std_msgs.msg import String
@@ -24,17 +25,12 @@ class Environment():
         self.timestep = 0
         self.complete = False
         self.robot_list = {}
-        self.grid_size = 10
+        self.grid_size = 20
         self.num_robots = num_robots
 
-        global pygame
-        pygame = __import__('pygame', globals(), locals())
-        # import pygame
         pygame.init()
         self.gameDisplay = pygame.display.set_mode((1000, 1000))
-        self.gameDisplay.fill(black)
-        self.pixAr = pygame.PixelArray(self.gameDisplay)
-        self.render = True
+        self.render()
 
     def get_goal(self):
         return self.goal
@@ -78,11 +74,13 @@ class Environment():
         self.gameDisplay.fill(grey)
 
         for path_y, path_x, _ in zip(*sparse.find(self.walls)):
-            pygame.draw.rect(self.gameDisplay, white, (
+            rect = (
                 (path_x - 0.5) * self.grid_size,
                 (path_y - 0.5) * self.grid_size,
-                (path_x + 0.5) * self.grid_size,
-                (path_y + 0.5) * self.grid_size), width=0)
+                self.grid_size,
+                self.grid_size
+            )
+            pygame.draw.rect(self.gameDisplay, white, rect, width=0)
 
         for _, pos in self.robot_list:
             pygame.draw.circle(self.gameDisplay, black, pos * self.grid_size, 0.3 * self.grid_size)
