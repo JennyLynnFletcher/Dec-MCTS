@@ -185,9 +185,9 @@ class DecMCTS_Agent(robot.Robot):
         
         rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
         rospy.Subscriber("tick", Empty, tick_callback, self.update_iterations%5 == 0)
+        #rospy.init_node('Agent' + str(self.robot_id), anonymous=True)
 
-        rospy.spin()    
-        timer.shutdown()
+        #rospy.spin()
 
     def update_distribution(self, probs):
         for (x, node) in probs.keys:

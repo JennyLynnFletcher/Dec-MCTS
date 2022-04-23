@@ -36,20 +36,21 @@ class Environment():
         self.pixAr = pygame.PixelArray(self.gameDisplay)
         self.render = True
 
-    def add_robot(self, start_loc, goal_loc):
+    def add_robot(self, robot_id, start_loc, goal_loc):
         '''
         Add robot with start location start_loc, goal goal_loc and pass self as env
         Add to self.robot_list
         '''
         def task():
-            r = decMCTS.DecMCTS_Agent(robot_id=i, start_loc=start_loc, goal_loc=goal_loc, env=self)
+            r = decMCTS.DecMCTS_Agent(robot_id=robot_id, start_loc=start_loc, goal_loc=goal_loc, env=self)
             r.control_loop()
         
-        for i in range(self.num_robots):
-            self.robot_list[i] = (start_loc, goal_loc)
-            thread = Thread(target=task)
-            thread.start()
-            thread.join()            
+        self.robot_list[robot_id] = (start_loc, goal_loc)
+        #thread = Thread(target=task)
+        #thread.start()
+        #thread.join()   
+        task()
+        print("robot_id: ", robot_id)
         
 
     def get_walls_from_loc(self, loc):
