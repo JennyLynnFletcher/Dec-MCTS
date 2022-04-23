@@ -109,7 +109,7 @@ class DecMCTS_Agent(robot.Robot):
 
     def reset_tree(self):
         self.Xrn = []
-        self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0, Xrn=self.Xrn)
+        self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0,maze_dims=(self.env.height,self.env.width), Xrn=self.Xrn)
 
     def get_Xrn_probs(self):
         probs = {}
@@ -285,7 +285,7 @@ class DecMCTSNode():
         action = self.get_stochastic_action()
         self.unexplored_actions.remove(action)
         next_state = self.state.move(action)
-        child_node = DecMCTSNode(next_state, self.depth + 1, parent=self, parent_action=action)
+        child_node = DecMCTSNode(next_state, self.depth + 1, self.maze_dims, parent=self, parent_action=action)
 
         self.children.append(child_node)
         return child_node
