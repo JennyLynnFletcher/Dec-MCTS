@@ -29,6 +29,10 @@ class Maze():
     def execute_default_action(self, agent_id):
         pass
 
+    # loc is (x,y) tuple
+    def add_robot(self, id, loc):
+        pass
+
     def get_score(self, comms_aware=False):
         # TODO: replace code starting here with proper code once stuff is decided
         # ----------------- FILLER CODE START -----------------

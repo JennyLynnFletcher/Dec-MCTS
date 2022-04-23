@@ -9,6 +9,7 @@ import numpy as np
 from collections import defaultdict
 
 from scipy import stats
+from maze import Action
 
 import rospy
 from std_msgs.msg import String
@@ -26,7 +27,18 @@ class Agent_State():
 
     # TODO add observations (that the child's new position is emtpy) to child state
     def move(self, action):
-        pass
+        x,y = self.loc
+        if action == Action.STAY:
+            pass
+        if action == Action.UP:
+            self.loc = (x,y-1)
+        if action == Action.DOWN:
+            self.loc = (x, y+1)
+        if action == Action.LEFT:
+            self.loc = (x-1, y)
+        if action == Action.RIGHT:
+            self.loc = (x+1, y)
+        
 
 
 class Agent_Info():
