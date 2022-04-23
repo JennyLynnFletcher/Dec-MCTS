@@ -98,7 +98,7 @@ class Maze:
                     n_dists += 1
                     sum_dists += dist
 
-            score += max_dist
+            score += max_dist / max_distance
         return score
 
     # loc is (x,y) tuple
