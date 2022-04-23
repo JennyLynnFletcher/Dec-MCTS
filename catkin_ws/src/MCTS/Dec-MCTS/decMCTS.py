@@ -173,7 +173,7 @@ class DecMCTS_Agent(robot.Robot):
             self.update_walls_from_loc()
 
     def update_walls_from_loc(self):
-        walls = self.env.get_walls_from_loc(self.loc)
+        walls = self.get_observations()
         x, y = self.loc
         if walls[Action.UP]:
             self.observations_list[y - 1, x] = 2
