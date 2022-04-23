@@ -1,5 +1,6 @@
 from enum import Enum, auto
 import collections
+import random
 
 from scipy import sparse
 
@@ -21,7 +22,8 @@ class Maze:
 
             # Inverse so that changing policy to invalid immediately jumps here
             if not (i < len(policy) and valid_policy):
-                self.execute_default_action(agent_id)
+                while not self.execute_default_action(agent_id):
+                    pass
 
     def try_action(self, agent_id, action):
         x, y = self.agent_positions[agent_id]
@@ -42,7 +44,8 @@ class Maze:
             return False
 
     def execute_default_action(self, agent_id):
-        self.try_action(agent_id, Action.STAY)
+        action = random.choice(list(Action))
+        return self.try_action(agent_id, action)
 
     def get_score(self, agent_obs, comms_aware=False):
         w = self.walls.shape[1]
