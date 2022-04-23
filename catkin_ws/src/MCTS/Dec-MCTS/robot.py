@@ -4,7 +4,7 @@ from geometry_msgs.msg import Point
 
 
 class Robot(object):
-    def __init__(self, robot_id, start_loc, goal_loc, time_interval, env):
+    def __init__(self, robot_id, start_loc, goal_loc, env):
         self.robot_id = robot_id
         self.start_loc = start_loc
         self.goal_loc = goal_loc
@@ -12,16 +12,10 @@ class Robot(object):
         self.loc_log = [start_loc]
         self.observations_list = []
         self.time_interval = time_interval
-        self.env = None
+        self.env = env
         self.pub_loc = rospy.Publisher('robot_loc_' + robot_id, Point, queue_size=10)
         rospy.init_node('Agent', anonymous=True)
         self.rate = rospy.Rate(1 / time_interval)
-
-    def register_env(self, env):
-        '''
-        Associates an Environment object with the robot
-        '''
-        self.env = env
 
     #TODO
     def get_time(self):
@@ -63,9 +57,3 @@ class Robot(object):
         '''
         msg = Point(x=self.loc[0], y=self.loc[1])
         self.pub_loc.publish(msg)
-   
-
-    def listener(self):
-        '''
-        Implement timer listener at frequency 1/time_interval to call to update()
-        '''
