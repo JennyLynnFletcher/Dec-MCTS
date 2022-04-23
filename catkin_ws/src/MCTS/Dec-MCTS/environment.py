@@ -3,6 +3,34 @@ from scipy import sparse
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
 from maze import Action
+from time import sleep, perf_counter
+from threading import Thread
+
+
+def task(id):
+    print(f'Starting the task {id}...')
+    sleep(1)
+    print('done')
+
+
+start_time = perf_counter()
+
+# create and start 10 threads
+threads = []
+for n in range(1, 11):
+    t = Thread(target=task, args=(n,))
+    threads.append(t)
+    t.start()
+
+# wait for the threads to complete
+for t in threads:
+    t.join()
+
+end_time = perf_counter()
+
+print(f'It took {end_time- start_time: 0.2f} second(s) to complete.')
+
+import decMCTS
 
 white = (255, 255, 255)
 grey = (100, 100, 100)
@@ -10,17 +38,17 @@ black = (0, 0, 0)
 
 
 class Environment():
-    def __init__(self, width, height, walls, start, goal, render_interval=0.5):
+    def __init__(self, width, height, goal, num_robots, render_interval=0.5):
         self.width = width
         self.height = height
-        self.walls = walls
-        self.start = start
+        self.walls = generate_maze(self.height, self.width)
         self.goal = goal
         self.render_interval = render_interval
         self.timestep = 0
         self.complete = False
-        self.robot_list = {}  # Tuple of robot ID and location
+        self.robot_list = []
         self.grid_size = 10
+        self.num_robots = num_robots
 
         global pygame
         pygame = __import__('pygame', globals(), locals())
@@ -31,11 +59,20 @@ class Environment():
         self.pixAr = pygame.PixelArray(self.gameDisplay)
         self.render = True
 
-    def add_robot(self, robot):
+    def add_robot(self, start_loc, goal_loc):
         '''
         Add robot with start location start_loc, goal goal_loc and pass self as env
         Add to self.robot_list
-        '''        
+        '''
+        def task():
+            r = decMCTS.DecMCTS_Agent(i, start_loc, goal_loc, self)
+            r.control_loop()
+        
+        for i in range(num_robots):
+            self.robot_list[i] = (start_loc, goal_loc)
+            thread = Thread(target=task)
+            thread.join()            
+        
 
     def get_walls_from_loc(self, loc):
         '''

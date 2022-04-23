@@ -57,7 +57,7 @@ class DecMCTS_Agent(robot.Robot):
     # a + prob_update_iterations *
     #     (b + c * distribution_sample_iterations * determinization_iterations +
     #     plan_growth_iterations * ( d + e * determinization_iterations))
-    def __init__(self, horizon,
+    def __init__(self, horizon=10,
                  prob_update_iterations=20,
                  plan_growth_iterations=20,
                  distribution_sample_iterations=50,
