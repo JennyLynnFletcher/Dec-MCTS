@@ -4,7 +4,7 @@ from geometry_msgs.msg import Point
 
 
 class Robot(object):
-    def __init__(self, robot_id, start_loc, goal_loc, env):
+    def __init__(self, robot_id, start_loc, goal_loc, time_interval, env):
         self.robot_id = robot_id
         self.start_loc = start_loc
         self.goal_loc = goal_loc
@@ -52,3 +52,9 @@ class Robot(object):
         '''
         msg = Point(x=self.loc[0], y=self.loc[1])
         self.pub_loc.publish(msg)
+   
+
+    def listener(self):
+        '''
+        Implement timer listener at frequency 1/time_interval to call to update()
+        '''
