@@ -106,7 +106,7 @@ class DecMCTS_Agent(robot.Robot):
             # Perform Dec_MCTS step
             node = self.tree.select_node(i).expand()
             other_agent_policies = self.sample_other_agents()
-            score = node.perform_rollout(self.robot_id, other_agent_policies, self.other_agent_info, self.horizon,
+            score = node.perform_rollout(self.robot_id, other_agent_policies, self.other_agent_info,self.observations_list, self.horizon,
                                          self.get_time(), self.determinization_iterations, self.env.get_goal())
             node.backpropagate(score, i)
 
@@ -204,11 +204,11 @@ class DecMCTS_Agent(robot.Robot):
                 f = 0
                 f_x = 0
                 for _ in range(self.determinization_iterations):
-                    f += compute_f(self.robot_id, our_actions, other_actions, self.loc, our_obs,
+                    f += compute_f(self.robot_id, our_actions, other_actions,self.observations_list, self.loc, our_obs,
                                    self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
                          / self.determinization_iterations
 
-                    f_x += compute_f(self.robot_id, x, other_actions, self.loc, our_obs,
+                    f_x += compute_f(self.robot_id, x, other_actions,self.observations_list, self.loc, our_obs,
                                      self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
                            / self.determinization_iterations
 
@@ -318,7 +318,7 @@ class DecMCTSNode():
         node_actions.reverse()
         return start_state, node_actions
 
-    def perform_rollout(self, this_id, other_agent_policies, other_agent_info, horizon, time,
+    def perform_rollout(self, this_id, other_agent_policies, other_agent_info,real_obs, horizon, time,
                         determinization_iterations, goal):
 
         horizon_time = time + self.depth + horizon
@@ -327,13 +327,13 @@ class DecMCTSNode():
 
         avg = 0
         for _ in range(determinization_iterations):
-            avg += compute_f(this_id, node_actions, other_agent_policies, start_state.loc, self.state.obs,
+            avg += compute_f(this_id, node_actions, other_agent_policies,real_obs, start_state.loc, self.state.obs,
                              other_agent_info, horizon_time, time, goal) / determinization_iterations
 
         return avg
 
 
-def compute_f(our_id, our_policy, other_agent_policies, our_loc, our_obs, other_agent_info, steps, current_time, goal):
+def compute_f(our_id, our_policy, other_agent_policies,real_obs, our_loc, our_obs, other_agent_info, steps, current_time, goal):
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
@@ -342,11 +342,11 @@ def compute_f(our_id, our_policy, other_agent_policies, our_loc, our_obs, other_
 
     # Score if we took no actions
     maze.add_robot(our_id, our_loc)
-    null_score = maze.get_score()
+    null_score = maze.get_score(real_obs)
 
     # Score if we take our actual actions (simulates future plans)
     maze.simulate_i_steps(steps - current_time, our_id, our_policy)
-    actuated_score = maze.get_score()
+    actuated_score = maze.get_score(real_obs)
     return actuated_score - null_score
 
 def merge_observations(obs1,obs2):
