@@ -99,4 +99,4 @@ class Environment():
         '''
         rospy.init_node('Environment', anonymous=True)
         for (robot_id, _) in self.robot_list:
-            rospy.Subscriber('robot_loc_' + robot_id, Point, update_loc, robot_id)
+            rospy.Subscriber('robot_loc_' + robot_id, Point, self.update_loc, robot_id)

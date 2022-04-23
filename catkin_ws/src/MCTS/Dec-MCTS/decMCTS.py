@@ -14,7 +14,7 @@ from scipy import sparse
 
 import rospy
 from std_msgs.msg import String
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Empty
 import pickle
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
@@ -91,6 +91,7 @@ class DecMCTS_Agent(robot.Robot):
         self.determinization_iterations = determinization_iterations
         self.distribution_sample_iterations = distribution_sample_iterations
         self.out_of_date_timeout = out_of_date_timeout
+        self.time = 0
 
 
     def growSearchTree(self):
@@ -173,9 +174,14 @@ class DecMCTS_Agent(robot.Robot):
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
     def control_loop(self):
-        rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
         
-        timer = rospy.Timer(rospy.Duration(5), self.update, self.update_iterations%5 == 0)
+        def tick_callback(_, execute_action):
+            self.time += 1
+            self.update(execute_action)
+            
+        
+        rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
+        rospy.Subscriber("tick", String, tick_callback, self.update_iterations%5 == 0)
 
         rospy.spin()    
         timer.shutdown()
