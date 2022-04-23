@@ -24,26 +24,6 @@ class Robot(object):
         '''
         return self.env.get_walls_from_loc(self.loc)
 
-    def move(self, direction):
-        '''
-        Move one step in direction passed as argument
-        if fail due to obstructing wall from get_observations()
-        stay in same location, update log
-        '''
-        if direction == N and not self.observations_list[-1]['N']:
-            (x,y) = self.loc
-            self.loc = (x, y+1)
-        elif direction == E and not self.observations_list[-1]['E']:
-            (x,y) = self.loc
-            self.loc = (x+1, y)
-        elif direction == S and not self.observations_list[-1]['S']:
-            (x,y) = self.loc
-            self.loc = (x, y-1)
-        elif direction == W and not self.observations_list[-1]['W']:
-            (x,y) = self.loc
-            self.loc = (x-1, y)
-            
-        self.observations_list.append(self.loc)
 
     def update(self,execute_action=True):
         '''
