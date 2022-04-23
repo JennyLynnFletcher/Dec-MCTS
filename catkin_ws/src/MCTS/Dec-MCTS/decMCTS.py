@@ -14,11 +14,11 @@ from maze import Action
 import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
+import pickle
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.5
 alpha = 0.01
-
 
 class Agent_State():
     def __init__(self, location, observations):
@@ -47,6 +47,7 @@ class Agent_Info():
         self.probs = probs  # dict
         self.time = timestamp  # int
         self.robot_id = robot_id  # arbitrary
+
 
     def select_random_plan(self):
         plan, _ = np.random.choice(self.probs.keys, p=self.probs.values).copy()
@@ -82,6 +83,8 @@ class DecMCTS_Agent(robot.Robot):
         self.tree = None
         self.Xrn = []
         self.reception_queue = []
+        self.pub_obs = rospy.Publisher('robot_obs', String, queue_size=10)
+        self.update_iterations = 0
         self.prob_update_iterations = prob_update_iterations
         self.plan_growth_iterations = plan_growth_iterations
         self.determinization_iterations = determinization_iterations
@@ -111,12 +114,14 @@ class DecMCTS_Agent(robot.Robot):
         return probs
 
     def package_comms(self, probs):
-        return Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time())
+        return pickle.dumps(Agent_Info(self.robot_id,Agent_State(self.loc,self.observations_list),probs,self.get_time()))
+
 
     def unpack_comms(self):
-        for message in self.reception_queue:
-            id = message.robot_id
-            if id in self.other_agent_info.keys():
+        for message_str in self.reception_queue:
+            message = pickle.loads(message_str)
+            robot_id = message.robot_id
+            if robot_id in self.other_agent_info.keys():
                 # If fresh message
                 if message.timestamp >= self.other_agent_info[id].time:
                     self.other_agent_info[id] = message
@@ -130,12 +135,13 @@ class DecMCTS_Agent(robot.Robot):
         self.reception_queue = []
 
     # Execute_movement should be true if this is a move step, rather than just part of the computation
+    
     def update(self, execute_action=True):
         '''
         Move to next position, update observations, update locations, run MCTS,
         publish to ROS topic
         '''
-
+        self.update_iterations += 1
         if self.executed_action_last_update:
             self.reset_tree()
             self.beta = 0.1
@@ -148,6 +154,7 @@ class DecMCTS_Agent(robot.Robot):
             self.update_distribution(probs)
             # TODO actually send this message
             message = self.package_comms(probs)
+            self.pub_obs.publish(message)
 
             self.unpack_comms()
             # TODO optionally clean up other-agent-plans
@@ -155,8 +162,10 @@ class DecMCTS_Agent(robot.Robot):
 
         if execute_action:
             self.executed_action_last_update = True
-            best_plan, _ = max(probs, key=probs.get)
-            # TODO actualy execute plan
+            best_plan,_ = max(probs, key=probs.get)
+            #TODO actualy execute plan
+            msg = Point(x=self.loc[0], y=self.loc[1])
+            self.pub_loc.publish(msg)
 
     def cool_beta(self):
         self.beta = self.beta * 0.9
@@ -164,11 +173,13 @@ class DecMCTS_Agent(robot.Robot):
     def sample_other_agents(self):
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
-    # TODO when we receive a message from another robot, append it to the reception queue
-    def listener(self):
-        '''
-        Implement timer listener at frequency 1/time_interval to call to update()
-        '''
+    def control_loop(self):
+        rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
+        
+        timer = rospy.Timer(rospy.Duration(5), update, self.update_iterations%5 == 0)
+
+        rospy.spin()    
+        timer.shutdown()
 
     def update_distribution(self, probs):
         for (x, node) in probs.keys:
