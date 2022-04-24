@@ -59,10 +59,10 @@ def update_agent_state(state, action):
 
 
 class Agent_Info():
-    def __init__(self, robot_id, state, probs, timestamp):
+    def __init__(self, robot_id, state, probs, time):
         self.state = state  # Agent_State
         self.probs = probs  # dict
-        self.time = timestamp  # int
+        self.time = time  # int
         self.robot_id = robot_id  # arbitrary
 
     def select_random_plan(self):
@@ -75,7 +75,8 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
     if len(other_agent_info) > 0:
         other_agent_dict_dict = {i: x.probs for (i, x) in other_agent_info.items()}
         node_prob_tuple_list = [random.choice(list(x.items())) for x in other_agent_dict_dict.values()]
-        other_actions, other_qs = list(map(list, zip(*node_prob_tuple_list)))
+        other_nodes, other_qs = list(map(list, zip(*node_prob_tuple_list)))
+        other_actions = [node.get_action_sequence() for node in other_nodes]
     else:
         other_actions = []
         other_qs = []
@@ -91,10 +92,10 @@ class DecMCTS_Agent(robot.Robot):
     # prob_update_iterations * probs_size * determinationization_iterations * distribution_sample_iterations
     def __init__(self, horizon=10,
                  prob_update_iterations=5,
-                 plan_growth_iterations=30,
-                 distribution_sample_iterations=10,
+                 plan_growth_iterations=60,
+                 distribution_sample_iterations=5,
                  determinization_iterations=3,
-                 probs_size=20,
+                 probs_size=10,
                  out_of_date_timeout=None,
                  *args, **kwargs):
         super(DecMCTS_Agent, self).__init__(*args, **kwargs)
@@ -165,7 +166,7 @@ class DecMCTS_Agent(robot.Robot):
             # If seen before
             if robot_id in self.other_agent_info.keys():
                 # If fresh message
-                if message.timestamp >= self.other_agent_info[robot_id].time:
+                if message.time >= self.other_agent_info[robot_id].time:
                     self.other_agent_info[robot_id] = message
             else:
                 self.other_agent_info[robot_id] = message
@@ -272,7 +273,7 @@ class DecMCTS_Agent(robot.Robot):
 
     def update_distribution(self, probs):
         for i,node in enumerate(probs.keys()):
-            print("updating probability for node " + str(i) +" of "+str(len(probs)))
+            #print("updating probability for node " + str(i) +" of "+str(len(probs)))
             q = probs[node]
             e_f = 0
             e_f_x = 0
