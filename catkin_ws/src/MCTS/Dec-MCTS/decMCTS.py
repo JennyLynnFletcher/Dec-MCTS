@@ -103,9 +103,20 @@ class DecMCTS_Agent(robot.Robot):
         self.time = 0
 
         self.observations_list = sparse.dok_matrix((self.env.height,self.env.width))
+        self.add_edges_to_observations()
         self.update_observations_from_location()
+        print(sparse.lil_matrix(self.observations_list).toarray())
         msg = Point(x=self.loc[0], y=self.loc[1])
         self.pub_loc.publish(msg)
+
+    def add_edges_to_observations(self):
+        for i in range(self.env.width):
+            self.observations_list[0, i] = 2
+            self.observations_list[self.env.height-1, i] = 2
+
+        for i in range(self.env.height):
+            self.observations_list[i,0] = 2
+            self.observations_list[i,self.env.width-1] = 2
 
     def get_time(self):
         return self.time
