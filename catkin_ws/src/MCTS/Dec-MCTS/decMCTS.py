@@ -66,8 +66,8 @@ class Agent_Info():
         self.robot_id = robot_id  # arbitrary
 
     def select_random_plan(self):
-        plan, _ = self.probs.keys()[np.random.choice(len(self.probs.keys()), p=self.probs.values())].copy()
-        return plan
+        return np.random.choice(list(self.probs.keys()), p=list(self.probs.values())).get_action_sequence()
+
 
 
 # ha ha ha, I'm so sorry if you have to read this part
