@@ -246,7 +246,7 @@ class DecMCTS_Agent(robot.Robot):
             self.update(execute_action)
 
         rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
-        rospy.Subscriber("tick", Empty, tick_callback, self.update_iterations % 5 == 0)
+        rospy.Subscriber("tick", Empty, tick_callback, self.update_iterations % 5 == 4)
         # rospy.init_node('Agent' + str(self.robot_id), anonymous=True)
 
         # rospy.spin()
