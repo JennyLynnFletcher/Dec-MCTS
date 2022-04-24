@@ -13,7 +13,7 @@ import decMCTS
 white = (255, 255, 255)
 grey = (100, 100, 100)
 black = (0, 0, 0)
-
+green = (0, 255, 0)
 
 class Environment():
     def __init__(self, width, height, goal, num_robots, render_interval=0.5):
@@ -81,6 +81,16 @@ class Environment():
                 self.grid_size
             )
             pygame.draw.rect(self.gameDisplay, white, rect, width=0)
+        pygame.draw.rect(
+            self.gameDisplay,
+            green,
+            (
+                (path_x - 0.5) * self.grid_size,
+                (path_y - 0.5) * self.grid_size,
+                self.grid_size,
+                self.grid_size
+            )
+            , width=0)
 
         for _, pos in self.robot_list:
             pygame.draw.circle(self.gameDisplay, black, pos * self.grid_size, 0.3 * self.grid_size)

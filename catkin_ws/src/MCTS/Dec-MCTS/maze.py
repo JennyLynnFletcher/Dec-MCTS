@@ -53,6 +53,7 @@ class Maze:
         h = self.walls.shape[0]
         positions_all = list(self.agent_positions.values())
         explored = agent_obs[agent_obs == 1]
+        explored.resize(agent_obs.shape)
 
         total_explorable_area = ((h - 2) * (w - 2) + h + w - 5) / 2
         percent_explored = len(explored) / total_explorable_area
