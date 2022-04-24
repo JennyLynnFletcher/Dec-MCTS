@@ -104,6 +104,7 @@ class Environment():
         x = loc_msg.x
         y = loc_msg.y
         self.robot_list[robot_id] = ((x,y), self.robot_list[robot_id][1])
+        print("updated robot "+str(robot_id))
         self.render()
 
     def set_up_listener(self):
