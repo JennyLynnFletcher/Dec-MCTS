@@ -117,5 +117,7 @@ class Action(Enum):
 
 
 def generate_maze(obs, goal):
-    maze_walls = maze_gen.fill_in_maze(obs)
+    maze_walls = maze_gen.fill_in_maze(obs.copy())
+    print(sparse.lil_matrix(maze_walls).toarray())
+
     return Maze(goal, maze_walls)

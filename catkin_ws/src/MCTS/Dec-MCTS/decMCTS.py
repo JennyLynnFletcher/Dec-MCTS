@@ -22,6 +22,9 @@ c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.90
 alpha = 0.01
 
+def printsparse(matrix):
+    print(sparse.lil_matrix(matrix).toarray())
+
 
 class Agent_State():
     def __init__(self, location, observations):
@@ -382,6 +385,7 @@ class DecMCTSNode():
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
               current_time, goal):
+
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
