@@ -3,7 +3,7 @@ import random
 
 import rospy
 from threading import Thread
-from std_msgs.msg import String, Empty
+from std_msgs.msg import String, Empty, Point
 import time
 from threading import Thread
 
@@ -32,6 +32,10 @@ if __name__ == '__main__':
         rospy.Subscriber("robot_obs", String, lambda x: robots[-1].reception_queue.append(x))
 
     env.set_up_listener()
+
+    for i, loc in enumerate(robot_start_locations):
+        msg = Point(x=loc[0], y=loc[1])
+        rospy.Publisher('robot_loc_' + str(i), Point, queue_size=10).publish(msg)
 
     i = -1
     while True:
