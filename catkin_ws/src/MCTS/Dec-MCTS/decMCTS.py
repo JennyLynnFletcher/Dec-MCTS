@@ -17,6 +17,7 @@ import rospy
 from std_msgs.msg import String, Empty
 from geometry_msgs.msg import Point
 import pickle
+import codecs
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.90
@@ -147,12 +148,12 @@ class DecMCTS_Agent(robot.Robot):
         return probs
 
     def package_comms(self, probs):
-        return pickle.dumps(
-            Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time()))
+        return Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time())
 
     def unpack_comms(self):
-        for message_str in self.reception_queue:
-            message = pickle.loads(message_str)
+        for message_str in self.reception_queue:            
+            message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
+            print(message)
             robot_id = message.robot_id
             # If seen before
             if robot_id in self.other_agent_info.keys():
@@ -186,8 +187,8 @@ class DecMCTS_Agent(robot.Robot):
         for _ in range(self.prob_update_iterations):
             self.growSearchTree()
             self.update_distribution(probs)
-            message = self.package_comms(probs)
-            self.pub_obs.publish(message)
+            message = self.package_comms(probs)            
+            self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
             self.unpack_comms()
             self.cool_beta()
