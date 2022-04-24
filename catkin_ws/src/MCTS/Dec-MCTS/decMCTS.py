@@ -23,6 +23,8 @@ c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.90
 alpha = 0.01
 
+calls_to_compute = 0
+
 def printsparse(matrix):
     print(matrix.toarray())
 
@@ -64,19 +66,23 @@ class Agent_Info():
         self.robot_id = robot_id  # arbitrary
 
     def select_random_plan(self):
-        print(str(self.probs.keys()) + "    " + str(self.probs.values()))
-
         plan, _ = self.probs.keys()[np.random.choice(len(self.probs.keys()), p=self.probs.values())].copy()
         return plan
 
 
 # ha ha ha, I'm so sorry if you have to read this part
 def uniform_sample_from_all_action_sequences(probs, other_agent_info):
-    other_agent_dict_dict = {i: x.probs for (i, x) in other_agent_info.items}
-    our_actions, our_node = random.choice(probs.values())
-    (other_actions, _), other_qs = zip(*map(lambda x: random.choice(x.items), other_agent_dict_dict.values()))
+    if len(other_agent_info) > 0:
+        other_agent_dict_dict = {i: x.probs for (i, x) in other_agent_info.items()}
+        node_prob_tuple_list = [random.choice(list(x.items())) for x in other_agent_dict_dict.values()]
+        other_actions, other_qs = list(map(list, zip(*node_prob_tuple_list)))
+    else:
+        other_actions = []
+        other_qs = []
+    our_node = random.choice(list(probs.keys()))
     our_q = probs[our_node]
     our_obs = our_node.state.obs
+    our_actions = our_node.get_action_sequence()
     return our_actions, other_actions, our_q, other_qs, our_obs
 
 
@@ -86,7 +92,7 @@ class DecMCTS_Agent(robot.Robot):
     #     (b + c * distribution_sample_iterations * determinization_iterations +
     #     plan_growth_iterations * ( d + e * determinization_iterations))
     def __init__(self, horizon=10,
-                 prob_update_iterations=20,
+                 prob_update_iterations=10, #TODO change back to 10
                  plan_growth_iterations=30,
                  distribution_sample_iterations=50,
                  determinization_iterations=5,
@@ -147,7 +153,7 @@ class DecMCTS_Agent(robot.Robot):
     def get_Xrn_probs(self):
         self.Xrn.sort(reverse=True, key=(lambda node : node.discounted_score))
         probs = {}
-        for (_,node) in self.Xrn[1:min(len(self.Xrn),self.probs_size)]:
+        for node in self.Xrn[1:min(len(self.Xrn),self.probs_size)]:
             probs[node] = 1 / self.probs_size
         return probs
 
@@ -155,8 +161,11 @@ class DecMCTS_Agent(robot.Robot):
         return Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time())
 
     def unpack_comms(self):
-        for message_str in self.reception_queue:            
+        for message_str in self.reception_queue:
             message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
+            print(message.state.loc)
+            print(message.probs)
+
             robot_id = message.robot_id
             # If seen before
             if robot_id in self.other_agent_info.keys():
@@ -186,18 +195,32 @@ class DecMCTS_Agent(robot.Robot):
             self.executed_action_last_update = False
 
         probs = self.get_Xrn_probs()
-        print(str(probs.keys()) + "    " + str(probs.values()))
+        print("reset probs to " + str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]))
 
-
-        for _ in range(self.prob_update_iterations):
+        for i in range(self.prob_update_iterations):
+            global calls_to_compute
+            calls_to_compute = 0
+            print(str(self.robot_id) + " growing tree, "+ str(i))
             self.growSearchTree()
+            print(str(calls_to_compute)+" calls")
             if len(probs) > 0:
+                calls_to_compute = 0
+                print(str(self.robot_id) + " computing probs, " + str(i))
                 self.update_distribution(probs)
                 message = self.package_comms(probs)
                 self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
+                print(str(calls_to_compute) + " calls")
 
+            calls_to_compute = 0
+            print(str(self.robot_id) + " unpacking comms, "+ str(i))
             self.unpack_comms()
             self.cool_beta()
+            print(str(calls_to_compute)+" calls")
+
+
+
+            print(str(self.robot_id) + " done with iteration "+ str(i))
+
 
         if execute_action:
             self.executed_action_last_update = True
@@ -211,6 +234,9 @@ class DecMCTS_Agent(robot.Robot):
             msg = Point(x=self.loc[0], y=self.loc[1])
             self.pub_loc.publish(msg)
             self.update_observations_from_location()
+
+        print("computed probabilities are: ", str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]) )
+
 
     def update_observations_from_location(self):
         x, y = self.loc
@@ -257,6 +283,7 @@ class DecMCTS_Agent(robot.Robot):
             e_f = 0
             e_f_x = 0
             for i in range(self.distribution_sample_iterations):
+                print(i)
                 # Evaluate nodes based off of what we actually know
                 our_actions, other_actions, our_q, other_qs, our_obs = \
                     uniform_sample_from_all_action_sequences(probs, self.other_agent_info)
@@ -272,11 +299,13 @@ class DecMCTS_Agent(robot.Robot):
                            / self.determinization_iterations
 
                 e_f += np.prod(other_qs + [our_q]) * f
-                e_f_x += np.prod(other_qs) * f_x
-
+                if len(other_qs) > 0:
+                    e_f_x += np.prod(other_qs) * f_x
+                else:
+                    e_f_x = 0
             probs[node] = q - alpha * q * (
                     (e_f - e_f_x) / self.beta
-                    + stats.entropy(probs.values) + np.log(q))
+                    + stats.entropy(list(probs.values())) + np.log(q))
 
             # normalize
             factor = 1.0 / sum(probs.values())
@@ -403,7 +432,8 @@ class DecMCTSNode():
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
               current_time, goal):
-
+    global calls_to_compute
+    calls_to_compute += 1
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
