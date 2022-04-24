@@ -1,7 +1,6 @@
 import math
 import random
 
-import local_sim
 import robot
 import maze as m
 
@@ -23,7 +22,6 @@ c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.90
 alpha = 0.01
 
-calls_to_compute = 0
 
 def printsparse(matrix):
     print(matrix.toarray())
@@ -195,28 +193,21 @@ class DecMCTS_Agent(robot.Robot):
         #print("reset probs to " + str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]))
 
         for i in range(self.prob_update_iterations):
-            global calls_to_compute
-            calls_to_compute = 0
-            print(str(self.robot_id) + " growing tree, "+ str(i))
+            #print(str(self.robot_id) + " growing tree, "+ str(i))
             self.growSearchTree()
-            print(str(calls_to_compute)+" calls")
             if len(probs) > 0:
-                calls_to_compute = 0
-                print(str(self.robot_id) + " computing probs, " + str(i))
+                #print(str(self.robot_id) + " computing probs, " + str(i))
                 self.update_distribution(probs)
                 message = self.package_comms(probs)
                 self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
-                print(str(calls_to_compute) + " calls")
 
-            calls_to_compute = 0
-            print(str(self.robot_id) + " unpacking comms, "+ str(i))
+            #print(str(self.robot_id) + " unpacking comms, "+ str(i))
             self.unpack_comms()
             self.cool_beta()
-            print(str(calls_to_compute)+" calls")
 
 
 
-            print(str(self.robot_id) + " done with iteration "+ str(i))
+            #print(str(self.robot_id) + " done with iteration "+ str(i))
 
 
         if execute_action:
@@ -427,8 +418,6 @@ class DecMCTSNode():
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
               current_time, goal):
-    global calls_to_compute
-    calls_to_compute += 1
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
