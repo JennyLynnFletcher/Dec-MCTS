@@ -37,9 +37,8 @@ class Maze:
             new_position[0] += 1
         elif action == Action.LEFT:
             new_position[0] -= 1
-        new_position = tuple(new_position)
-        if self.walls[new_position]:
-            self.agent_positions[agent_id] = new_position
+        if self.walls[new_position[1], new_position[0]]:
+            self.agent_positions[agent_id] = tuple(new_position)
             return True
         else:
             return False
