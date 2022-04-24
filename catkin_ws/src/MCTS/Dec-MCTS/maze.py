@@ -1,6 +1,7 @@
 from enum import Enum, auto
 import collections
 import random
+from time import time
 
 from scipy import sparse
 
@@ -49,6 +50,7 @@ class Maze:
 
     def get_score(self, agent_obs, comms_aware=False):
         # print(sparse.lil_matrix(agent_obs).toarray())
+        # t = time()
         w = self.walls.shape[1]
         h = self.walls.shape[0]
         positions_all = list(self.agent_positions.values())
@@ -58,29 +60,42 @@ class Maze:
         total_explorable_area = ((h - 2) * (w - 2) + h + w - 5) / 2
         percent_explored = len(explored) / total_explorable_area
 
-        distance = sparse.dok_matrix((h, w), dtype=int)
-        visited = sparse.dok_matrix((h, w), dtype=bool)
-        visited[self.goal] = True
-        goal_connected = sparse.dok_matrix((h, w), dtype=bool)
-        goal_connected[self.goal] = True
+        # newt = time()
+        # print(newt - t, "init")
+        # t = time()
+
+        distance = {self.goal: 0}
+        visited = set()
+        visited.add(self.goal)
+        goal_connected = {self.goal}
         bfs_queue = collections.deque()
         bfs_queue.append(self.goal)
         max_distance = 0
+
+        # newt = time()
+        # print(newt - t, "bfs_init")
+        # t = time()
+
         while bfs_queue:
             current = bfs_queue.pop()
             y, x = current
             for dif in (-1, 1):
                 for neighbour in [(y + dif, x), (y, x + dif)]:
-                    if visited[neighbour] or (not self.walls[neighbour]):
+                    if neighbour in visited or (not self.walls[neighbour]):
                         continue
-                    visited[neighbour] = True
+                    visited.add(neighbour)
                     distance[neighbour] = distance[current] + 1
                     max_distance = max(distance[neighbour], max_distance)
-                    goal_connected[neighbour] = goal_connected[current] and (not explored[neighbour])
+                    if self in goal_connected and not explored[neighbour]:
+                        goal_connected.add(neighbour)
                     bfs_queue.append(neighbour)
 
+        # newt = time()
+        # print(newt - t, "bfs")
+        # t = time()
+
         goal_component_size_pct = len(goal_connected) / total_explorable_area
-        robot_distances = [distance.T[position] for position in positions_all]
+        robot_distances = [distance[(position[1], position[0])] for position in positions_all]
 
         # TODO: think about the weights on these things, for now they are all equal
         #  which is a really bad idea since percent explored < 1 and others are >> 1
@@ -101,6 +116,10 @@ class Maze:
                     sum_dists += dist
 
             score += max_dist / max_distance
+
+        # newt = time()
+        # print(newt - t, "score")
+
         return score
 
     # loc is (x,y) tuple

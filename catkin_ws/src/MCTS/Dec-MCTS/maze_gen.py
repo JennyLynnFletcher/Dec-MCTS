@@ -1,3 +1,4 @@
+from time import time
 import scipy.sparse
 from scipy import sparse
 import random
@@ -97,9 +98,9 @@ def fill_in_maze(maze):
     else:
         return ValueError("no known traversible point found in maze")
 
-    for y in range(1, h, 2):
-        for x in range(1, w, 2):
-            maze[y, x] = 1
+    # for y in range(1, h, 2):
+    #     for x in range(1, w, 2):
+    #         maze[y, x] = 1
 
     bfs(bfs_start)
 
@@ -181,8 +182,23 @@ if __name__ == '__main__':
     a[3, 1] = 1
     a[2, 2] = 2
     a[3, 2] = 1
-    print(a.todense())
-    print(fill_in_maze(a).todense())
+    from maze import generate_maze as gen_m
+
+    times = [[], []]
+    # for _ in range(500):
+    start = time()
+    maze = gen_m(a.copy(), (5,5))
+    mid = time()
+    maze.add_robot(0, (1,2))
+    maze.add_robot(1, (1,2))
+    mid2 = time()
+    maze.get_score(agent_obs=a)
+    end = time()
+    times[0].append(mid - start)
+    times[1].append(end-mid2)
+
+    print(sum(times[0])/len(times[0]), sum(times[1])/len(times[1]))
+
     # print(fill_in_maze(sparse.vstack((a[:-1,:], a), format="dok")).todense())
     # tall_new = sparse.vstack((a[:-1,:], sparse.dok_matrix((7, 7), dtype=int)), format="dok")
     # print(fill_in_maze(tall_new).todense())
