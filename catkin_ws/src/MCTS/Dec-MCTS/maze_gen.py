@@ -1,5 +1,4 @@
 from time import time
-import scipy.sparse
 from scipy import sparse
 import random
 
@@ -99,7 +98,7 @@ def fill_in_maze(maze):
                 wall_paths.append(tuple([y, x]))
     if bfs_start is None:
         return ValueError("no known traversible point found in maze")
-    for x, y in wall_paths:
+    for y, x in wall_paths:
         if x % 2:
             maze[y + 1, x] = 1
             maze[y - 1, x] = 1

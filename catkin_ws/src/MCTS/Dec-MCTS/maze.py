@@ -1,9 +1,6 @@
 from enum import Enum, auto
 import collections
 import random
-from time import time
-
-from scipy import sparse
 
 import maze_gen
 
@@ -53,11 +50,10 @@ class Maze:
         w = self.walls.shape[1]
         h = self.walls.shape[0]
         positions_all = list(self.agent_positions.values())
-        explored = agent_obs[agent_obs == 1]
-        explored.resize(agent_obs.shape)
+        n_xplored = (agent_obs == 1).getnnz()
 
         total_explorable_area = ((h - 2) * (w - 2) + h + w - 5) / 2
-        percent_explored = len(explored) / total_explorable_area
+        percent_explored = n_xplored / total_explorable_area
 
         # newt = time()
         # print(newt - t, "init")
@@ -85,7 +81,7 @@ class Maze:
                     visited.add(neighbour)
                     distance[neighbour] = distance[current] + 1
                     max_distance = max(distance[neighbour], max_distance)
-                    if self in goal_connected and not explored[neighbour]:
+                    if self in goal_connected and not agent_obs[neighbour]:
                         goal_connected.add(neighbour)
                     bfs_queue.append(neighbour)
 
