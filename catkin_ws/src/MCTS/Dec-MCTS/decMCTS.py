@@ -242,7 +242,7 @@ class DecMCTS_Agent(robot.Robot):
         # rospy.spin()
 
     def update_distribution(self, probs):
-        for (x, node) in probs.keys:
+        for (x, node) in probs.keys():
             q = probs[(x, node)]
             e_f = 0
             e_f_x = 0
