@@ -80,7 +80,7 @@ class Maze:
                     bfs_queue.append(neighbour)
 
         goal_component_size_pct = len(goal_connected) / total_explorable_area
-        robot_distances = [distance.T[position] for position in self.agent_positions]
+        robot_distances = [distance.T[position] for position in positions_all]
 
         # TODO: think about the weights on these things, for now they are all equal
         #  which is a really bad idea since percent explored < 1 and others are >> 1
