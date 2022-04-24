@@ -280,7 +280,7 @@ class DecMCTSNode():
         return self.select_node_d_uct(round_n)
 
     def select_node_d_uct(self, round_n):
-        if not self.is_fully_expanded():
+        if self.not_fully_explored():
             return self
         else:
             t_js = [child.discounted_visits * math.pow(discount_param, round_n - child.last_round_visited)
@@ -293,7 +293,7 @@ class DecMCTSNode():
                 c = 2 * math.sqrt(max(np.log(t_d), 0) / t_js[i])
                 child_scores.append(f + c_param * c)
 
-            return self.children[np.argmax(np.asarray(child_scores))]
+            return self.children[np.argmax(np.asarray(child_scores))].select_node_d_uct(round_n)
 
     def get_legal_actions(self):
         '''
@@ -311,7 +311,7 @@ class DecMCTSNode():
         if self.state.obs[y, x - 1] != 2 and x - 1 >= 0:
             actions.append(Action.LEFT)
         if self.state.obs[y, x + 1] != 2 and x + 1 < self.maze_dims[1]:
-            actions.append(Action.DOWN)
+            actions.append(Action.RIGHT)
         return actions
 
     def get_stochastic_action(self):
@@ -339,8 +339,8 @@ class DecMCTSNode():
         if self.parent is not None:
             self.parent.backpropagate(score, iteration)
 
-    def is_fully_expanded(self):
-        return len(self.unexplored_actions) == 0
+    def not_fully_explored(self):
+        return len(self.unexplored_actions) != 0
 
     def tree_history(self):
         curr_node = self
