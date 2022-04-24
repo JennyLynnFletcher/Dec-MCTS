@@ -1,5 +1,6 @@
 import math
 import random
+import threading
 
 import maze as m
 
@@ -189,7 +190,7 @@ class DecMCTS_Agent():
         Move to next position, update observations, update locations, run MCTS,
         publish to ROS topic
         '''
-        print("----------- Update ", self.update_iterations , " Robot id ", self.robot_id , " Execute action ",execute_action," ------------")
+        print("-------- Update ", self.update_iterations , " Robot id ", self.robot_id , " Execute action ",execute_action,"Thread id ", threading.get_ident(), "---------")
         self.update_iterations += 1
         if self.executed_action_last_update:
             self.reset_tree()

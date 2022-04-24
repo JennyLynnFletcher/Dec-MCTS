@@ -82,8 +82,8 @@ class Environment():
             self.gameDisplay,
             green,
             (
-                (path_x - 0.5) * self.grid_size,
-                (path_y - 0.5) * self.grid_size,
+                (self.goal[0] - 0.5) * self.grid_size,
+                (self.goal[1] - 0.5) * self.grid_size,
                 self.grid_size,
                 self.grid_size
             )
