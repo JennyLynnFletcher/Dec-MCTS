@@ -184,6 +184,7 @@ class DecMCTS_Agent(robot.Robot):
         Move to next position, update observations, update locations, run MCTS,
         publish to ROS topic
         '''
+        print("----------- Update ", self.update_iterations , " Robot id ", self.robot_id , " Execute action ",execute_action," ------------")
         self.update_iterations += 1
         if self.executed_action_last_update:
             self.reset_tree()
@@ -261,12 +262,12 @@ class DecMCTS_Agent(robot.Robot):
 
     def control_loop(self):
 
-        def tick_callback(_, execute_action):
+        def tick_callback(_):
             self.time += 1
-            self.update(execute_action)
+            self.update(self.update_iterations % 2 == 1)
 
         rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
-        rospy.Subscriber("tick", Empty, tick_callback, self.update_iterations % 5 == 4)
+        rospy.Subscriber("tick", Empty, tick_callback)
         # rospy.init_node('Agent' + str(self.robot_id), anonymous=True)
 
         # rospy.spin()
