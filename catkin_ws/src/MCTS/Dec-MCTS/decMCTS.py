@@ -1,7 +1,6 @@
 import math
 import random
 
-import robot
 import maze as m
 
 import numpy as np
@@ -85,18 +84,17 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
     return our_actions, other_actions, our_q, other_qs, our_obs
 
 
-class DecMCTS_Agent(robot.Robot):
+class DecMCTS_Agent():
     # Runtime is
     # prob_update_iterations * probs_size * determinationization_iterations * distribution_sample_iterations
-    def __init__(self, horizon=10,
+    def __init__(self, robot_id, start_loc, goal_loc, env,
+                 horizon=10,
                  prob_update_iterations=5,
-                 plan_growth_iterations=60,
-                 distribution_sample_iterations=5,
+                 plan_growth_iterations=30,
+                 distribution_sample_iterations=3,
                  determinization_iterations=3,
                  probs_size=10,
-                 out_of_date_timeout=None,
-                 *args, **kwargs):
-        super(DecMCTS_Agent, self).__init__(*args, **kwargs)
+                 out_of_date_timeout=None):
         self.horizon = horizon
         self.other_agent_info = {}
         self.executed_action_last_update = True
@@ -112,6 +110,15 @@ class DecMCTS_Agent(robot.Robot):
         self.out_of_date_timeout = out_of_date_timeout
         self.time = 0
         self.probs_size = probs_size
+
+        self.robot_id = robot_id
+        self.start_loc = start_loc
+        self.goal_loc = goal_loc
+        self.loc = start_loc
+        self.loc_log = [start_loc]
+        self.env = env
+        self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id), Point, queue_size=10)
+
 
         self.observations_list = sparse.dok_matrix((self.env.height,self.env.width))
         self.add_edges_to_observations()
@@ -217,7 +224,7 @@ class DecMCTS_Agent(robot.Robot):
                 best_action = best_plan[0]
             else:
                 best_action = Action.STAY
-            print("execute action" + str(best_action))
+            print("Executing action: "  + str(best_action))
             self.loc = move(self.loc, best_action)
             msg = Point(x=self.loc[0], y=self.loc[1])
             self.pub_loc.publish(msg)
@@ -251,17 +258,6 @@ class DecMCTS_Agent(robot.Robot):
     def sample_other_agents(self):
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
-    def control_loop(self):
-
-        def tick_callback(_):
-            self.time += 1
-            self.update(self.update_iterations % 2 == 1)
-
-        rospy.Subscriber("robot_obs", String, lambda x: self.reception_queue.append(x))
-        rospy.Subscriber("tick", Empty, tick_callback)
-        # rospy.init_node('Agent' + str(self.robot_id), anonymous=True)
-
-        # rospy.spin()
 
     def update_distribution(self, probs):
         for i,node in enumerate(probs.keys()):
@@ -275,14 +271,14 @@ class DecMCTS_Agent(robot.Robot):
                     uniform_sample_from_all_action_sequences(probs, self.other_agent_info)
                 f = 0
                 f_x = 0
-                for _ in range(self.determinization_iterations):
+                for _ in range(self.determinization_iterations//2):
                     f += compute_f(self.robot_id, our_actions, other_actions, self.observations_list, self.loc, our_obs,
                                    self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
-                         / self.determinization_iterations
+                         / (self.determinization_iterations//2)
 
                     f_x += compute_f(self.robot_id, node.get_action_sequence(), other_actions, self.observations_list, self.loc, our_obs,
                                      self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
-                           / self.determinization_iterations
+                           / (self.determinization_iterations//2)
 
                 e_f += np.prod(other_qs + [our_q]) * f
                 if len(other_qs) > 0:
