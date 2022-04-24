@@ -24,7 +24,7 @@ discount_param = 0.90
 alpha = 0.01
 
 def printsparse(matrix):
-    print(sparse.lil_matrix(matrix).toarray())
+    print(matrix.toarray())
 
 
 class Agent_State():
@@ -64,7 +64,9 @@ class Agent_Info():
         self.robot_id = robot_id  # arbitrary
 
     def select_random_plan(self):
-        plan, _ = np.random.choice(self.probs.keys, p=self.probs.values).copy()
+        print(str(self.probs.keys()) + "    " + str(self.probs.values()))
+
+        plan, _ = self.probs.keys()[np.random.choice(len(self.probs.keys()), p=self.probs.values())].copy()
         return plan
 
 
@@ -88,6 +90,7 @@ class DecMCTS_Agent(robot.Robot):
                  plan_growth_iterations=30,
                  distribution_sample_iterations=50,
                  determinization_iterations=5,
+                 probs_size=50,
                  out_of_date_timeout=None,
                  *args, **kwargs):
         super(DecMCTS_Agent, self).__init__(*args, **kwargs)
@@ -105,11 +108,11 @@ class DecMCTS_Agent(robot.Robot):
         self.distribution_sample_iterations = distribution_sample_iterations
         self.out_of_date_timeout = out_of_date_timeout
         self.time = 0
+        self.probs_size = probs_size
 
         self.observations_list = sparse.dok_matrix((self.env.height,self.env.width))
         self.add_edges_to_observations()
         self.update_observations_from_location()
-        print(sparse.lil_matrix(self.observations_list).toarray())
         msg = Point(x=self.loc[0], y=self.loc[1])
         self.pub_loc.publish(msg)
 
@@ -142,9 +145,10 @@ class DecMCTS_Agent(robot.Robot):
                                 maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn)
 
     def get_Xrn_probs(self):
+        self.Xrn.sort(reverse=True,key=(lambda x : x[1].discounted_score))
         probs = {}
-        for x in self.Xrn:
-            probs[x] = 1 / len(self.Xrn)
+        for x in self.Xrn[1:min(len(self.Xrn),self.probs_size)]:
+            probs[x] = 1 / self.probs_size
         return probs
 
     def package_comms(self, probs):
@@ -153,15 +157,14 @@ class DecMCTS_Agent(robot.Robot):
     def unpack_comms(self):
         for message_str in self.reception_queue:            
             message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
-            print(message)
             robot_id = message.robot_id
             # If seen before
             if robot_id in self.other_agent_info.keys():
                 # If fresh message
-                if message.timestamp >= self.other_agent_info[id].time:
-                    self.other_agent_info[id] = message
+                if message.timestamp >= self.other_agent_info[robot_id].time:
+                    self.other_agent_info[robot_id] = message
             else:
-                self.other_agent_info[id] = message
+                self.other_agent_info[robot_id] = message
             self.observations_list = merge_observations(self.observations_list, message.state.obs)
         time = self.get_time()
         # Filter out-of-date messages
@@ -183,12 +186,15 @@ class DecMCTS_Agent(robot.Robot):
             self.executed_action_last_update = False
 
         probs = self.get_Xrn_probs()
+        print(str(probs.keys()) + "    " + str(probs.values()))
+
 
         for _ in range(self.prob_update_iterations):
             self.growSearchTree()
             self.update_distribution(probs)
-            message = self.package_comms(probs)            
-            self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
+            if len(probs)>0:
+                message = self.package_comms(probs)
+                self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
             self.unpack_comms()
             self.cool_beta()

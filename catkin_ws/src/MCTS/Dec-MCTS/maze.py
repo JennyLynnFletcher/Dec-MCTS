@@ -104,8 +104,8 @@ class Maze:
         return score
 
     # loc is (x,y) tuple
-    def add_robot(self, id, loc):
-        self.agent_positions[id] = loc
+    def add_robot(self, robot_id, loc):
+        self.agent_positions[robot_id] = loc
 
 
 class Action(Enum):
