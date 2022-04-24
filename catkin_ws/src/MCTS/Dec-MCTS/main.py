@@ -3,7 +3,9 @@ import random
 
 import rospy
 from threading import Thread
-from std_msgs.msg import String, Empty, Point
+from std_msgs.msg import String, Empty
+from geometry_msgs.msg import Point
+
 import time
 from threading import Thread
 
