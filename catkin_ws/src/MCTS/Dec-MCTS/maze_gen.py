@@ -96,6 +96,11 @@ def fill_in_maze(maze):
             break
     else:
         return ValueError("no known traversible point found in maze")
+
+    for y in range(1, h, 2):
+        for x in range(1, w, 2):
+            maze[y, x] = 1
+
     bfs(bfs_start)
 
     while walls:
@@ -165,12 +170,23 @@ def fill_in_maze(maze):
 
 
 if __name__ == '__main__':
-    a = generate_maze(5, 5)
+    a = sparse.dok_matrix((15, 15), int)
+    for i in range(15):
+        a[0, i] = 2
+        a[14, i] = 2
+        a[i, 0] = 2
+        a[i, 14] = 2
+    a[1, 1] = 1
+    a[2, 1] = 1
+    a[3, 1] = 1
+    a[2, 2] = 2
+    a[3, 2] = 1
     print(a.todense())
+    print(fill_in_maze(a).todense())
     # print(fill_in_maze(sparse.vstack((a[:-1,:], a), format="dok")).todense())
-    tall_new = sparse.vstack((a[:-1,:], sparse.dok_matrix((7, 7), dtype=int)), format="dok")
-    print(fill_in_maze(tall_new).todense())
-
-    double_new = sparse.hstack((tall_new, sparse.dok_matrix((13, 6), dtype=int)), format="dok")
-
-    print(fill_in_maze(double_new).todense())
+    # tall_new = sparse.vstack((a[:-1,:], sparse.dok_matrix((7, 7), dtype=int)), format="dok")
+    # print(fill_in_maze(tall_new).todense())
+    #
+    # double_new = sparse.hstack((tall_new, sparse.dok_matrix((13, 6), dtype=int)), format="dok")
+    #
+    # print(fill_in_maze(double_new).todense())
