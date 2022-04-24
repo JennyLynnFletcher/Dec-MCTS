@@ -104,7 +104,8 @@ class DecMCTS_Agent(robot.Robot):
 
         self.observations_list = sparse.dok_matrix((self.env.height,self.env.width))
         self.update_observations_from_location()
-
+        msg = Point(x=self.loc[0], y=self.loc[1])
+        self.pub_loc.publish(msg)
 
     def get_time(self):
         return self.time
