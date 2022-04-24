@@ -90,17 +90,22 @@ def fill_in_maze(maze):
 
     non_empties = sparse.find(maze)
     bfs_start = None
+    wall_paths = []
     for i in range(len(non_empties[0])):
         y, x, val = (arr[i] for arr in non_empties)
         if val == 1:
             bfs_start = (y, x)
-            break
-    else:
+            if y % 2 == 0 or x % 2 == 0:
+                wall_paths.append(tuple([y, x]))
+    if bfs_start is None:
         return ValueError("no known traversible point found in maze")
-
-    # for y in range(1, h, 2):
-    #     for x in range(1, w, 2):
-    #         maze[y, x] = 1
+    for x, y in wall_paths:
+        if x % 2:
+            maze[y + 1, x] = 1
+            maze[y - 1, x] = 1
+        else:
+            maze[y, x + 1] = 1
+            maze[y, x - 1] = 1
 
     bfs(bfs_start)
 
@@ -196,6 +201,7 @@ if __name__ == '__main__':
     end = time()
     times[0].append(mid - start)
     times[1].append(end-mid2)
+    print(maze.walls.todense())
 
     print(sum(times[0])/len(times[0]), sum(times[1])/len(times[1]))
 

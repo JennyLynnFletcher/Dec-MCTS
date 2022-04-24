@@ -272,7 +272,7 @@ class DecMCTS_Agent(robot.Robot):
 
     def update_distribution(self, probs):
         for i,node in enumerate(probs.keys()):
-            probs("updating probability for node " + str(i) +" of "+str(len(probs)))
+            print("updating probability for node " + str(i) +" of "+str(len(probs)))
             q = probs[node]
             e_f = 0
             e_f_x = 0
