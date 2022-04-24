@@ -179,6 +179,7 @@ class DecMCTS_Agent(robot.Robot):
             self.cool_beta()
 
         if execute_action:
+            print("execute action")
             self.executed_action_last_update = True
             best_plan, _ = max(probs, key=probs.get)
             print(best_plan[0].name)
