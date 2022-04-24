@@ -13,8 +13,8 @@ if __name__ == '__main__':
     
     env = environment.Environment(15,15,(6,7), 10, render_interval=1)
     
-    env.add_robot(0, (1,2), (4,4))
-    env.add_robot(1, (1,2), (4,4))
+    env.add_robot(0, (1,1), (5,5))
+    env.add_robot(1, (1,1), (5,5))
     
     
     

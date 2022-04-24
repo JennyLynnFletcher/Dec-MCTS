@@ -88,15 +88,13 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
 
 class DecMCTS_Agent(robot.Robot):
     # Runtime is
-    # a + prob_update_iterations *
-    #     (b + c * distribution_sample_iterations * determinization_iterations +
-    #     plan_growth_iterations * ( d + e * determinization_iterations))
+    # prob_update_iterations * probs_size * determinationization_iterations * distribution_sample_iterations
     def __init__(self, horizon=10,
-                 prob_update_iterations=10, #TODO change back to 10
+                 prob_update_iterations=5,
                  plan_growth_iterations=30,
-                 distribution_sample_iterations=50,
-                 determinization_iterations=5,
-                 probs_size=50,
+                 distribution_sample_iterations=10,
+                 determinization_iterations=3,
+                 probs_size=20,
                  out_of_date_timeout=None,
                  *args, **kwargs):
         super(DecMCTS_Agent, self).__init__(*args, **kwargs)
@@ -163,9 +161,6 @@ class DecMCTS_Agent(robot.Robot):
     def unpack_comms(self):
         for message_str in self.reception_queue:
             message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
-            print(message.state.loc)
-            print(message.probs)
-
             robot_id = message.robot_id
             # If seen before
             if robot_id in self.other_agent_info.keys():
@@ -195,7 +190,7 @@ class DecMCTS_Agent(robot.Robot):
             self.executed_action_last_update = False
 
         probs = self.get_Xrn_probs()
-        print("reset probs to " + str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]))
+        #print("reset probs to " + str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]))
 
         for i in range(self.prob_update_iterations):
             global calls_to_compute
@@ -234,8 +229,6 @@ class DecMCTS_Agent(robot.Robot):
             msg = Point(x=self.loc[0], y=self.loc[1])
             self.pub_loc.publish(msg)
             self.update_observations_from_location()
-
-        print("computed probabilities are: ", str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]) )
 
 
     def update_observations_from_location(self):
@@ -278,12 +271,12 @@ class DecMCTS_Agent(robot.Robot):
         # rospy.spin()
 
     def update_distribution(self, probs):
-        for node in probs.keys():
+        for i,node in enumerate(probs.keys()):
+            probs("updating probability for node " + str(i) +" of "+str(len(probs)))
             q = probs[node]
             e_f = 0
             e_f_x = 0
-            for i in range(self.distribution_sample_iterations):
-                print(i)
+            for _ in range(self.distribution_sample_iterations):
                 # Evaluate nodes based off of what we actually know
                 our_actions, other_actions, our_q, other_qs, our_obs = \
                     uniform_sample_from_all_action_sequences(probs, self.other_agent_info)
