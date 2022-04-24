@@ -75,7 +75,7 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
     other_agent_dict_dict = {i: x.probs for (i, x) in other_agent_info.items}
     our_actions, our_node = random.choice(probs.values())
     (other_actions, _), other_qs = zip(*map(lambda x: random.choice(x.items), other_agent_dict_dict.values()))
-    our_q = probs[(our_actions, our_node)]
+    our_q = probs[our_node]
     our_obs = our_node.state.obs
     return our_actions, other_actions, our_q, other_qs, our_obs
 
@@ -145,10 +145,10 @@ class DecMCTS_Agent(robot.Robot):
                                 maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn)
 
     def get_Xrn_probs(self):
-        self.Xrn.sort(reverse=True,key=(lambda x : x[1].discounted_score))
+        self.Xrn.sort(reverse=True, key=(lambda node : node.discounted_score))
         probs = {}
-        for x in self.Xrn[1:min(len(self.Xrn),self.probs_size)]:
-            probs[x] = 1 / self.probs_size
+        for (_,node) in self.Xrn[1:min(len(self.Xrn),self.probs_size)]:
+            probs[node] = 1 / self.probs_size
         return probs
 
     def package_comms(self, probs):
@@ -191,8 +191,8 @@ class DecMCTS_Agent(robot.Robot):
 
         for _ in range(self.prob_update_iterations):
             self.growSearchTree()
-            self.update_distribution(probs)
-            if len(probs)>0:
+            if len(probs) > 0:
+                self.update_distribution(probs)
                 message = self.package_comms(probs)
                 self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
@@ -200,11 +200,14 @@ class DecMCTS_Agent(robot.Robot):
             self.cool_beta()
 
         if execute_action:
-            print("execute action")
             self.executed_action_last_update = True
-            best_plan, _ = max(probs, key=probs.get)
-            print(best_plan[0].name)
-            self.loc = move(self.loc, best_plan[0])
+            if len(probs) > 0:
+                best_plan = max(probs, key=probs.get).get_action_sequence()
+                best_action = best_plan[0]
+            else:
+                best_action = Action.STAY
+            print("execute action" + str(best_action))
+            self.loc = move(self.loc, best_action)
             msg = Point(x=self.loc[0], y=self.loc[1])
             self.pub_loc.publish(msg)
             self.update_observations_from_location()
@@ -249,8 +252,8 @@ class DecMCTS_Agent(robot.Robot):
         # rospy.spin()
 
     def update_distribution(self, probs):
-        for (x, node) in probs.keys():
-            q = probs[(x, node)]
+        for node in probs.keys():
+            q = probs[node]
             e_f = 0
             e_f_x = 0
             for i in range(self.distribution_sample_iterations):
@@ -264,14 +267,14 @@ class DecMCTS_Agent(robot.Robot):
                                    self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
                          / self.determinization_iterations
 
-                    f_x += compute_f(self.robot_id, x, other_actions, self.observations_list, self.loc, our_obs,
+                    f_x += compute_f(self.robot_id, node.get_action_sequence(), other_actions, self.observations_list, self.loc, our_obs,
                                      self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
                            / self.determinization_iterations
 
                 e_f += np.prod(other_qs + [our_q]) * f
                 e_f_x += np.prod(other_qs) * f_x
 
-            probs[(x, node)] = q - alpha * q * (
+            probs[node] = q - alpha * q * (
                     (e_f - e_f_x) / self.beta
                     + stats.entropy(probs.values) + np.log(q))
 
@@ -296,6 +299,14 @@ class DecMCTSNode():
         self.discounted_score = 0
         self.last_round_visited = 0
         self.unexplored_actions = self.get_legal_actions()
+        self.action_sequence = None
+
+    def get_action_sequence(self):
+        if self.action_sequence is not None:
+            return self.action_sequence
+        else:
+            _, self.action_sequence = self.tree_history()
+            return self.action_sequence
 
     def select_node(self, round_n):
         return self.select_node_d_uct(round_n)
@@ -380,7 +391,7 @@ class DecMCTSNode():
 
         horizon_time = time + self.depth + horizon
         start_state, node_actions = self.tree_history()
-        self.Xrn.append((node_actions, self))
+        self.Xrn.append(self)
 
         avg = 0
         for _ in range(determinization_iterations):
