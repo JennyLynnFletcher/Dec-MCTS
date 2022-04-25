@@ -3,7 +3,7 @@ from scipy import sparse
 import random
 
 
-def generate_maze(h, w):
+def generate_maze(h, w, seed=None):
     """
     h, w: required maze dimensions, must be odd
     returns:
@@ -12,6 +12,7 @@ def generate_maze(h, w):
     0: wall
     1: traversible
     """
+    random.seed(seed)
     if h % 2 and w % 2:
         maze = sparse.dok_matrix((h + 2, w + 2), dtype=int)
         maze[1, 1] = 1

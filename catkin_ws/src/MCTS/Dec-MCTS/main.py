@@ -21,14 +21,15 @@ if __name__ == '__main__':
     num_robots=3
 
     goal = (3, 5)
-    env = environment.Environment(width, height, goal, num_robots, render_interval=1)
+    random.seed(0)
+    env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=0)
 
     robot_start_locations = []
     for _ in range(num_robots):
         robot_start_locations.append((random.randrange(0,width//2)*2+1, random.randrange(0,height//2)*2+1))
     print("Start locations: "+str(robot_start_locations))
     robots = []
-
+    random.seed()
     for robot_id, start_location in enumerate(robot_start_locations):
         env.add_robot(robot_id, start_location, goal)
         rospy.Subscriber("robot_obs", String, lambda x: robots[-1].reception_queue.append(x))
