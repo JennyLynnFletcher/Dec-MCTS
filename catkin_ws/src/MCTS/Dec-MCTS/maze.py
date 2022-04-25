@@ -70,6 +70,8 @@ class Maze:
         # newt = time()
         # print(newt - t, "bfs_init")
         # t = time()
+        for x, y in positions_all:
+            self.walls[y,x] = 1
 
         while bfs_queue:
             current = bfs_queue.pop()
@@ -133,4 +135,4 @@ class Action(Enum):
 def generate_maze(obs, goal):
     maze_walls = maze_gen.fill_in_maze(obs.copy())
 
-    return Maze(goal, maze_walls, obs)
+    return Maze(goal, maze_walls)
