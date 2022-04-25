@@ -113,4 +113,5 @@ class Environment():
         Implement timer listener at frequency 1/render_interval to call to render()
         '''
         for robot_id in self.robot_list.keys():
+            print("Added listener ","robot_loc_",robot_id)
             rospy.Subscriber('robot_loc_' + str(robot_id), Point, self.update_loc, robot_id)
