@@ -94,7 +94,7 @@ class Maze:
 
         # TODO: think about the weights on these things, for now they are all equal
         #  which is a really bad idea since percent explored < 1 and others are >> 1
-        score = sum(robot_distances)/(len(robot_distances) * max_distance) + percent_explored + goal_component_size_pct
+        score = - sum(robot_distances)/(len(robot_distances) * max_distance) + percent_explored - goal_component_size_pct
 
         if comms_aware:
             max_dist = 0
@@ -110,7 +110,7 @@ class Maze:
                     n_dists += 1
                     sum_dists += dist
 
-            score += max_dist / max_distance
+            score -= max_dist / max_distance
 
         # newt = time()
         # print(newt - t, "score")
@@ -133,4 +133,4 @@ class Action(Enum):
 def generate_maze(obs, goal):
     maze_walls = maze_gen.fill_in_maze(obs.copy())
 
-    return Maze(goal, maze_walls)
+    return Maze(goal, maze_walls, obs)
