@@ -44,9 +44,9 @@ colour_order = [Colour.Red, Colour.Blue, Colour.Green, Colour.Cyan, Colour.Yello
 
 class Environment():
     def __init__(self, width, height, goal, num_robots, render_interval=0.5):
-        self.width = width
-        self.height = height
-        self.walls = maze_gen.generate_maze(self.height, self.width)
+        self.width = width + 2
+        self.height = height + 2
+        self.walls = maze_gen.generate_maze(height, width)
         self.goal = goal
         self.render_interval = render_interval
         self.timestep = 0
@@ -82,10 +82,10 @@ class Environment():
         '''
         x, y = loc
         return {
-            Action.UP:    self.walls[x, y - 1] == 0,
-            Action.DOWN:  self.walls[x, y + 1] == 0,
-            Action.LEFT:  self.walls[x - 1, y] == 0,
-            Action.RIGHT: self.walls[x + 1, y] == 0
+            Action.LEFT:    self.walls[y, x - 1] == 0,
+            Action.RIGHT:  self.walls[y, x + 1] == 0,
+            Action.UP:  self.walls[y - 1, x] == 0,
+            Action.DOWN: self.walls[y + 1, x] == 0
         }
 
     def render(self):
