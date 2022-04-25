@@ -1,4 +1,5 @@
 import random
+from enum import Enum
 
 import pygame
 import rospy
@@ -12,10 +13,34 @@ from threading import Thread
 
 import decMCTS
 
-white = (255, 255, 255)
-grey = (100, 100, 100)
-black = (0, 0, 0)
-green = (0, 255, 0)
+
+class Colour(Enum):
+    Black = (0, 0, 0)
+    Grey = (100, 100, 100)
+    White = (255, 255, 255)
+    Red = (168, 22, 0)
+    Blue = (22, 0, 168)
+    Green = (0, 168, 22)
+    Cyan = (0, 168, 168)
+    Yellow = (200, 200, 0)
+    Magenta = (168, 0, 168)
+    Orange = (200, 90, 0)
+    Purple = (100, 0, 168)
+    LightRed = (200, 100, 100)
+    LightBlue = (100, 100, 200)
+    LightGreen = (100, 200, 100)
+    LightCyan = (100, 200, 200)
+    LightYellow = (200, 200, 100)
+    LightMagenta = (200, 100, 200)
+    LightPurple = (168, 100, 255)
+    LightOrange = (255, 168, 100)
+    GoalGreen = (0, 255, 0)
+
+
+colour_order = [Colour.Red, Colour.Blue, Colour.Green, Colour.Cyan, Colour.Yellow, Colour.Magenta, Colour.Orange,
+                Colour.Purple, Colour.LightRed, Colour.LightBlue, Colour.LightGreen, Colour.LightCyan,
+                Colour.LightYellow, Colour.LightMagenta, Colour.LightOrange, Colour.LightPurple]
+
 
 class Environment():
     def __init__(self, width, height, goal, num_robots, render_interval=0.5):
@@ -45,8 +70,9 @@ class Environment():
         '''
 
         self.robot_list[robot_id] = (start_loc, goal_loc)
-        self.robot_colors[robot_id] = (random.randrange(0,200),random.randrange(0,200),random.randrange(0,200))
+        self.robot_colors[robot_id] = colour_order[len(self.robot_list) - 1 % len(colour_order)]
         print("robot_id: ", robot_id)
+        self.render()
         
 
     def get_walls_from_loc(self, loc):
@@ -68,7 +94,7 @@ class Environment():
         requires testing
         '''
 
-        self.gameDisplay.fill(grey)
+        self.gameDisplay.fill(Colour.Grey.value)
         print("Rendering...")
         for path_y, path_x, _ in zip(*sparse.find(self.walls)):
             rect = (
@@ -77,10 +103,10 @@ class Environment():
                 self.grid_size,
                 self.grid_size
             )
-            pygame.draw.rect(self.gameDisplay, white, rect, width=0)
+            pygame.draw.rect(self.gameDisplay, Colour.White.value, rect, width=0)
         pygame.draw.rect(
             self.gameDisplay,
-            green,
+            Colour.GoalGreen.value,
             (
                 (self.goal[0] - 0.5) * self.grid_size,
                 (self.goal[1] - 0.5) * self.grid_size,
@@ -89,9 +115,9 @@ class Environment():
             )
             , width=0)
 
-        for robot_id,((x,y), _) in self.robot_list.items():
+        for robot_id, ((x, y), _) in self.robot_list.items():
             pygame.draw.circle(surface=self.gameDisplay,
-                               color=self.robot_colors[robot_id],
+                               color=self.robot_colors[robot_id].value,
                                center=(x * self.grid_size,y*self.grid_size),
                                radius=0.3 * self.grid_size)
         pygame.display.update()
