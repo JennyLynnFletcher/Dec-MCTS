@@ -42,7 +42,8 @@ if __name__ == '__main__':
 
 
     i = -1
-    while True:
+    complete = False
+    while not complete:
         pygame.display.update()
         is_execute_iteration = ((i % 2) == 0)
         i += 1
@@ -54,4 +55,9 @@ if __name__ == '__main__':
             threads.append(thread)
         for thread in threads:
             thread.join()
+        complete = True
+        for r in robots:
+            complete = complete and r.complete
         pygame.display.update()
+        
+    pygame.quit()
