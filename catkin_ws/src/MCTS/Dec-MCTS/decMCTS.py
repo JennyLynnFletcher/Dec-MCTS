@@ -94,7 +94,9 @@ class DecMCTS_Agent():
                  distribution_sample_iterations=3,
                  determinization_iterations=3,
                  probs_size=10,
-                 out_of_date_timeout=None):
+                 out_of_date_timeout=None,
+                 comms_drop=None,
+                 comms_drop_rate=None):
         self.horizon = horizon
         self.other_agent_info = {}
         self.executed_action_last_update = True
@@ -118,6 +120,8 @@ class DecMCTS_Agent():
         self.loc_log = [start_loc]
         self.env = env
         self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id), Point, queue_size=10)
+        self.comms_drop = comms_drop
+        self.comms_drop_rate = comms_drop_rate
 
         self.observations_list = sparse.dok_matrix((self.env.height, self.env.width))
         self.add_edges_to_observations()
@@ -166,15 +170,21 @@ class DecMCTS_Agent():
     def unpack_comms(self):
         for message_str in self.reception_queue:
             message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
-            robot_id = message.robot_id
-            # If seen before
-            if robot_id in self.other_agent_info.keys():
-                # If fresh message
-                if message.time >= self.other_agent_info[robot_id].time:
-                    self.other_agent_info[robot_id] = message
+            distance = max(math.sqrt((message.state.loc[0] - self.loc[0])**2 + (message.state.loc[1] - self.loc[1])**2), 1)
+            if self.comms_drop == "uniform" and random.random() < self.comms_drop_rate:
+                print("Packet drop")
+            elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate/(distance)**2:
+                print("Packet drop")
             else:
-                self.other_agent_info[robot_id] = message
-            self.observations_list = merge_observations(self.observations_list, message.state.obs)
+                robot_id = message.robot_id
+                # If seen before
+                if robot_id in self.other_agent_info.keys():
+                    # If fresh message
+                    if message.time >= self.other_agent_info[robot_id].time:
+                        self.other_agent_info[robot_id] = message
+                else:
+                    self.other_agent_info[robot_id] = message
+                self.observations_list = merge_observations(self.observations_list, message.state.obs)
         time = self.get_time()
         # Filter out-of-date messages
         if self.out_of_date_timeout is not None:

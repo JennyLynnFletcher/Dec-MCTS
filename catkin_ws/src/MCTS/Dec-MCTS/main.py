@@ -15,11 +15,11 @@ import decMCTS
 if __name__ == '__main__':
     rospy.init_node('Main', anonymous=True)
 
-    width = 31
-    height=31
+    width = 7
+    height=7
     num_robots=2
 
-    goal = (15, 15)
+    goal = (3, 5)
     env = environment.Environment(width, height, goal, num_robots, render_interval=1)
 
     robot_start_locations = []
@@ -35,7 +35,8 @@ if __name__ == '__main__':
     env.set_up_listener()
 
     for robot_id, start_location in enumerate(robot_start_locations):
-        robots.append(decMCTS.DecMCTS_Agent(robot_id=robot_id, start_loc=start_location, goal_loc=goal, env=env))
+        robots.append(decMCTS.DecMCTS_Agent(robot_id=robot_id, start_loc=start_location, goal_loc=goal, env=env,
+                                            comms_drop="distance", comms_drop_rate=0.8))
 
 
     i = -1
