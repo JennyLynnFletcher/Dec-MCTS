@@ -122,6 +122,7 @@ class DecMCTS_Agent():
         self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id), Point, queue_size=10)
         self.comms_drop = comms_drop
         self.comms_drop_rate = comms_drop_rate
+        self.complete = False
 
         self.observations_list = sparse.dok_matrix((self.env.height, self.env.width))
         self.add_edges_to_observations()
@@ -233,6 +234,8 @@ class DecMCTS_Agent():
                 best_action = Action.STAY
             print("Executing action: " + str(best_action))
             self.loc = move(self.loc, best_action)
+            if self.loc == self.goal_loc: 
+                self.complete = True
             msg = Point(x=self.loc[0], y=self.loc[1])
             self.pub_loc.publish(msg)
             self.update_observations_from_location()
