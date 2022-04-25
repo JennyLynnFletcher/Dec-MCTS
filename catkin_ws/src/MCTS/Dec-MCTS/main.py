@@ -8,6 +8,7 @@ from geometry_msgs.msg import Point
 
 import time
 from threading import Thread
+import pygame
 
 import environment
 import decMCTS
@@ -15,9 +16,9 @@ import decMCTS
 if __name__ == '__main__':
     rospy.init_node('Main', anonymous=True)
 
-    width = 7
-    height=7
-    num_robots=2
+    width = 11
+    height=11
+    num_robots=3
 
     goal = (3, 5)
     env = environment.Environment(width, height, goal, num_robots, render_interval=1)
@@ -36,11 +37,12 @@ if __name__ == '__main__':
 
     for robot_id, start_location in enumerate(robot_start_locations):
         robots.append(decMCTS.DecMCTS_Agent(robot_id=robot_id, start_loc=start_location, goal_loc=goal, env=env,
-                                            comms_drop="distance", comms_drop_rate=0.8))
+                                            comms_drop="distance", comms_drop_rate=0.9))
 
 
     i = -1
     while True:
+        pygame.display.update()
         is_execute_iteration = ((i % 2) == 0)
         i += 1
         print(i)
@@ -51,3 +53,4 @@ if __name__ == '__main__':
             threads.append(thread)
         for thread in threads:
             thread.join()
+        pygame.display.update()

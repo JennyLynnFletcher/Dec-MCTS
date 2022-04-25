@@ -93,7 +93,6 @@ class Environment():
         render stuff
         requires testing
         '''
-
         self.gameDisplay.fill(Colour.Grey.value)
         print("Rendering...")
         for path_y, path_x, _ in zip(*sparse.find(self.walls)):
@@ -120,7 +119,7 @@ class Environment():
                                color=self.robot_colors[robot_id].value,
                                center=(x * self.grid_size,y*self.grid_size),
                                radius=0.3 * self.grid_size)
-        pygame.display.update()
+        #pygame.display.update()
 
     def update_loc(self, loc_msg, robot_id):
         '''
