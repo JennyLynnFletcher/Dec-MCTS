@@ -1,6 +1,6 @@
 import math
+import os
 import random
-import threading
 import time
 
 import maze as m
@@ -209,7 +209,7 @@ class DecMCTS_Agent():
         publish to ROS topic
         '''
         print("-------- Update ", self.update_iterations, " Robot id ", self.robot_id, " Execute action ",
-              execute_action, "Thread id ", threading.get_ident(), "---------")
+              execute_action, "Process id ", os.getpid(), "---------")
         self.update_iterations += 1
         if self.executed_action_last_update:
             self.reset_tree()
@@ -243,7 +243,7 @@ class DecMCTS_Agent():
                 best_action = Action.STAY
             print("Executing action: " + str(best_action))
             self.loc = move(self.loc, best_action)
-            if self.loc == self.goal_loc: 
+            if self.loc == self.goal_loc:
                 self.complete = True
             msg = Point(x=self.loc[0], y=self.loc[1])
             self.pub_loc.publish(msg)
@@ -277,7 +277,8 @@ class DecMCTS_Agent():
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
     def update_distribution(self, probs):
-        for i, node in enumerate(probs.keys()):
+        newprobs = {}
+        for node in probs.keys():
             # print("updating probability for node " + str(i) +" of "+str(len(probs)))
             q = probs[node]
             e_f = 0
@@ -287,7 +288,7 @@ class DecMCTS_Agent():
                 our_actions, other_actions, our_q, other_qs, our_obs = \
                     uniform_sample_from_all_action_sequences(probs, self.other_agent_info)
                 f = 0
-                f_x = 0             
+                f_x = 0
                 for _ in range(self.determinization_iterations // 2):
                     f += compute_f(self.robot_id, our_actions, other_actions, self.observations_list, self.loc, our_obs,
                                    self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal(),comms_aware_planning=self.comms_aware_planning) \
@@ -303,14 +304,14 @@ class DecMCTS_Agent():
                     e_f_x += np.prod(list(other_qs.values())) * f_x
                 else:
                     e_f_x = 0
-            probs[node] = q - alpha * q * (
+            newprobs[node] = q - alpha * q * (
                     (e_f - e_f_x) / self.beta
                     + stats.entropy(list(probs.values())) + np.log(q))
 
-            # normalize
-            factor = 1.0 / sum(probs.values())
-            for k in probs:
-                probs[k] = probs[k] * factor
+        # normalize
+        factor = 1.0 / sum(newprobs.values())
+        for k in probs.keys():
+            probs[k] = newprobs[k] * factor
 
 
 class DecMCTSNode():
