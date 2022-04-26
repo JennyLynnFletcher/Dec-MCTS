@@ -1,6 +1,7 @@
 import math
 import os
 import random
+import threading
 import time
 
 import maze as m
@@ -87,7 +88,7 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
 
 
 def get_new_prob(i, node,probs,distribution_sample_iterations,other_agent_info,determinization_iterations,robot_id,observations_list,loc,horizon,time,goal,comms_aware_planning,beta):
-    # print("updating probability for node " + str(i) +" of "+str(len(probs)))
+    #print("updating probability for node " + str(i) +" of "+str(len(probs))+" on pid "+str(os.getpid()))
     q = probs[node]
     e_f = 0
     e_f_x = 0
@@ -244,7 +245,7 @@ class DecMCTS_Agent():
         publish to ROS topic
         '''
         print("-------- Update ", self.update_iterations, " Robot id ", self.robot_id, " Execute action ",
-              execute_action, "Process id ", os.getpid(), "---------")
+              execute_action, "Thread id ", threading.current_thread().name, "---------")
         self.update_iterations += 1
         if self.executed_action_last_update:
             self.reset_tree()
