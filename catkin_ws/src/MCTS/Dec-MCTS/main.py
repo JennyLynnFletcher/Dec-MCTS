@@ -28,10 +28,10 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default"):
 
     width = 11
     height = 11
-
+    
+    random.seed(seed)
     goal = (random.randrange(0, width // 2) * 2 + 1, random.randrange(0, height // 2) * 2 + 1)
     print("Goal: ", goal)
-    random.seed(seed)
     env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=0)
 
     robot_start_locations = []
@@ -91,6 +91,9 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default"):
         f.write("Comms_aware: " + str(comms_aware) + ", num_robots: " + str(num_robots) + ", Iterations: " + str(i))
 
 
-for i in range(10):
-    main(comms_aware=True, num_robots=5, seed=i, name="11x11_comms_" + str(i))
-    main(comms_aware=False, num_robots=5, seed=i, name="11x11_nocoms_" + str(i))
+try:
+    for i in range(10):
+        main(comms_aware=True, num_robots=5, seed=i, name="11x11_comms_" + str(i))
+        main(comms_aware=False, num_robots=5, seed=i, name="11x11_nocoms_" + str(i))
+except SystemExit:
+    pygame.quit()
