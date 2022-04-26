@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     width = 11
     height=11
-    num_robots=3
+    num_robots=5
 
     goal = (3, 5)
     random.seed(0)

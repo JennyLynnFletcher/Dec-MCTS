@@ -432,7 +432,7 @@ def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_o
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
         maze.add_robot(id, agent.state.loc)
-        if id <= len(other_agent_policies):
+        if id < len(other_agent_policies):
             maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
 
     # Score if we took no actions
