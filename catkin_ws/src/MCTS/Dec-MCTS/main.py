@@ -17,16 +17,20 @@ def main(comms_aware=True, num_robots=3, seed=0):
     rospy.init_node('Main', anonymous=True)
 
 
-    width = 21
-    height=21
+    width = 11
+    height=11
 
-    goal = (3, 5)
+
+    goal = (random.randrange(0,width//2)*2+1, random.randrange(0,height//2)*2+1)
     random.seed(0)
     env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=0)
 
     robot_start_locations = []
     for _ in range(num_robots):
-        robot_start_locations.append((random.randrange(0,width//2)*2+1, random.randrange(0,height//2)*2+1))
+        loc = (random.randrange(0,width//2)*2+1, random.randrange(0,height//2)*2+1)
+        while loc == goal:
+            loc = (random.randrange(0,width//2)*2+1, random.randrange(0,height//2)*2+1)
+        robot_start_locations.append(loc)
     print("Start locations: "+str(robot_start_locations))
     robots = []
     random.seed()
