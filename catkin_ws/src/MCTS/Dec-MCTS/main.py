@@ -63,7 +63,7 @@ def main(comms_aware=True, num_robots=3, seed=0):
         
     pygame.quit()
     with open('./results.txt', 'a') as f:
-        f.writeline("Comms_aware: ", comms_aware, ", num_robots: ", num_robots, ", Iterations: ", i)
+        f.write("Comms_aware: ", comms_aware, ", num_robots: ", num_robots, ", Iterations: ", i, "\n")
 
     
 for i in range(10):
