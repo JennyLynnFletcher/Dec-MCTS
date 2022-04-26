@@ -134,5 +134,6 @@ class Action(Enum):
 
 def generate_maze(obs, goal):
     maze_walls = maze_gen.fill_in_maze(obs.copy())
+    maze_walls = maze_gen.fill_in_maze(maze_walls.maximum(obs.copy()))
 
     return Maze(goal, maze_walls)
