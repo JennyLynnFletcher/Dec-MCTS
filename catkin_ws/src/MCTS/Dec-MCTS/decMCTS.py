@@ -135,7 +135,8 @@ class DecMCTS_Agent():
         msg = Point(x=self.loc[0], y=self.loc[1])
         self.pub_loc.publish(msg)
 
-        print("Creating robot ",self.robot_id," at position ",start_loc,", comms aware planning is ", ("enabled" if comms_aware_planning  else "disabled"))
+        print("Creating robot " +str(self.robot_id)+" at position "+str(start_loc)+
+              ", comms aware planning is "+ ("enabled" if comms_aware_planning  else "disabled"))
 
     def add_edges_to_observations(self):
         for i in range(self.env.width):
@@ -351,7 +352,7 @@ class DecMCTSNode():
             child_scores = []
             for i, child in enumerate(self.children):
                 if child.discounted_visits == 0:
-                    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                    print("WARNING, CHILDREN SHOULD NOT BE UNVISITED (decmcts.py  select_node_d_uct)")
                     print(child.discounted_visits)
                     print(self.depth)
                     print(self.discounted_visits)
