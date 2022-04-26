@@ -16,10 +16,11 @@ import decMCTS
 def main(comms_aware=True, num_robots=3, seed=0):
     rospy.init_node('Main', anonymous=True)
 
-    width = 11
-    height=11
 
-    goal = (3, 5)
+    width = 21
+    height=21
+
+    goal = (13, 15)
     random.seed(0)
     env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=0)
 
@@ -63,9 +64,9 @@ def main(comms_aware=True, num_robots=3, seed=0):
         
     pygame.quit()
     with open('./results.txt', 'a') as f:
-        f.writeline("Comms_aware: ", comms_aware, ", num_robots: ", num_robots, ", Iterations: ", i)
+        f.write("Comms_aware: " + str(comms_aware)+ ", num_robots: "+ str(num_robots)+ ", Iterations: "+ str(i))
 
     
 for i in range(10):
-    main(comms_aware=True, num_robots=3, seed=i)
-    main(comms_aware=False, num_robots=3, seed=i)
+    main(comms_aware=True, num_robots=10, seed=i)
+    main(comms_aware=False, num_robots=10, seed=i)
