@@ -20,7 +20,7 @@ def main(comms_aware=True, num_robots=3, seed=0):
     width = 21
     height=21
 
-    goal = (13, 15)
+    goal = (3, 5)
     random.seed(0)
     env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=0)
 
@@ -61,6 +61,7 @@ def main(comms_aware=True, num_robots=3, seed=0):
         for r in robots:
             complete = complete and r.complete
         pygame.display.update()
+        pygame.image.save(env.gameDisplay, "output/Frame_"+str(i)+".jpg")
         
     pygame.quit()
     with open('./results.txt', 'a') as f:
