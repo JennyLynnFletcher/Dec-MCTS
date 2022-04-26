@@ -51,8 +51,10 @@ if __name__ == '__main__':
         threads = []
         for r in robots:
             thread = Thread(target=r.update, args=[is_execute_iteration])
-            thread.start()
             threads.append(thread)
+        random.shuffle(threads)
+        for thread in threads:
+            thread.start()
         for thread in threads:
             thread.join()
         complete = True

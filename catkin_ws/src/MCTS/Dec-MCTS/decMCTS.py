@@ -220,7 +220,6 @@ class DecMCTS_Agent():
                 message = self.package_comms(probs)
                 self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
-            time.sleep(random.random()*0.5)
             # print(str(self.robot_id) + " unpacking comms, "+ str(i))
             self.unpack_comms()
             self.cool_beta()
@@ -433,15 +432,16 @@ def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_o
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
         maze.add_robot(id, agent.state.loc)
-        maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
+        if id <= len(other_agent_policies):
+            maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
 
     # Score if we took no actions
     maze.add_robot(our_id, our_loc)
-    null_score = maze.get_score(real_obs)
+    null_score = maze.get_score(real_obs, comms_aware=True)
 
     # Score if we take our actual actions (simulates future plans)
     maze.simulate_i_steps(steps - current_time, our_id, our_policy)
-    actuated_score = maze.get_score(real_obs)
+    actuated_score = maze.get_score(real_obs, comms_aware=True)
     return actuated_score - null_score
 
 
