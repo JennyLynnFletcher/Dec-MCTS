@@ -59,8 +59,6 @@ class Maze:
         visited = set()
         visited.add(self.goal)
         goal_connected = {self.goal}
-        bfs_queue = collections.deque()
-        bfs_queue.append(self.goal)
         max_distance = 0
 
         for x, y in positions_all:
