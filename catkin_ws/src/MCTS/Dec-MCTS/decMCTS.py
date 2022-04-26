@@ -150,6 +150,7 @@ class DecMCTS_Agent():
         self.time = 0
         self.probs_size = probs_size
         self.comms_aware_planning = comms_aware_planning
+        self.times_removed_other_agent = 0
 
         self.robot_id = robot_id
         self.start_loc = start_loc
@@ -234,8 +235,14 @@ class DecMCTS_Agent():
         time = self.get_time()
         # Filter out-of-date messages
         if self.out_of_date_timeout is not None:
-            self.other_agent_info = {k: v for k, v in self.other_agent_info if
-                                     v.time + self.out_of_date_timeout >= time}
+            new_other_agent = {}
+            for k, v in self.other_agent_info:
+                if v.time + self.out_of_date_timeout >= time:
+                    new_other_agent[k] = v
+                else:
+                    self.times_removed_other_agent += 1
+            self.other_agent_info = new_other_agent
+
         self.reception_queue = []
 
     # Execute_movement should be true if this is a move step, rather than just part of the computation
@@ -321,7 +328,9 @@ class DecMCTS_Agent():
 
         with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
 
-            newprobs = p.starmap(get_new_prob, args)
+            #newprobs = p.starmap(get_new_prob, args)
+            newprobs = map(get_new_prob, args)
+
             key_dict = dict(enumerated_keys)
             # normalize
             factor = 1.0 / sum([prob for i, prob in newprobs])
