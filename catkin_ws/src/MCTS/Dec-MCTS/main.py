@@ -34,10 +34,10 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
     width = 11
     height = 11
 
+    random.seed(seed)
     goal = (random.randrange(0, width // 2) * 2 + 1, random.randrange(0, height // 2) * 2 + 1)
     print("Goal: ", goal)
-    random.seed(seed)
-    env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=0)
+    env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=seed)
 
     robot_start_locations = []
     for _ in range(num_robots):
@@ -47,7 +47,6 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
         robot_start_locations.append(loc)
     print("Start locations: " + str(robot_start_locations))
     robots = []
-    random.seed()
     for robot_id, start_location in enumerate(robot_start_locations):
         env.add_robot(robot_id, start_location, goal)
 
@@ -103,10 +102,10 @@ if __name__ == "__main__":
         print(sys.argv)
         name = sys.argv[1]
         seed = int(sys.argv[2])
-        num_robots = int(sys.argv[2])
-        maze_width = int(sys.argv[3])
-        comms = bool(sys.argv[4])
-        out_of_date_timeout = int(sys.argv[5]) if int(sys.argv[5]) > 0 else None
+        num_robots = int(sys.argv[3])
+        maze_width = int(sys.argv[4])
+        comms = bool(sys.argv[5])
+        out_of_date_timeout = int(sys.argv[6]) if int(sys.argv[6]) > 0 else None
 
         main(comms_aware=comms, num_robots=num_robots, seed=seed,
              name=name + "__" + str(maze_width) + "x" + str(maze_width) + "__comms_" + str(comms) + "__timeout_" + str(
