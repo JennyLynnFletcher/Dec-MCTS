@@ -79,11 +79,11 @@ class Maze:
             for dif in (-1, 1):
                 for neighbour in [(y + dif, x), (y, x + dif)]:
                     if neighbour in visited or (not self.walls[neighbour]):
-                        continue
+                        continue                    
                     visited.add(neighbour)
                     distance[neighbour] = distance[current] + 1
                     max_distance = max(distance[neighbour], max_distance)
-                    if self in goal_connected and not agent_obs[neighbour]:
+                    if (y,x) in goal_connected and not agent_obs[neighbour]:
                         goal_connected.add(neighbour)
                     bfs_queue.append(neighbour)
 
@@ -92,11 +92,15 @@ class Maze:
         # t = time()
 
         goal_component_size_pct = len(goal_connected) / total_explorable_area
-        robot_distances = [distance[(position[1], position[0])] for position in positions_all]
+            
+        
+        robot_distances = [distance[(position[1], position[0])] if (position[1], position[0]) in distance.keys() else max_distance for position in positions_all]
+            
 
+            
         # TODO: think about the weights on these things, for now they are all equal
         #  which is a really bad idea since percent explored < 1 and others are >> 1
-        score = - sum(robot_distances)/(len(robot_distances) * max_distance) + percent_explored - goal_component_size_pct
+        score = - sum(robot_distances)/(len(robot_distances) * max_distance) + 10*percent_explored - goal_component_size_pct
 
         if comms_aware:
             max_dist = 0
@@ -136,4 +140,4 @@ def generate_maze(obs, goal):
     maze_walls = maze_gen.fill_in_maze(obs.copy())
     maze_walls = maze_gen.fill_in_maze(maze_walls.maximum(obs.copy()))
 
-    return Maze(goal, maze_walls)
+    return Maze((goal[1],goal[0]), maze_walls)

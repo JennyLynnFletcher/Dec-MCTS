@@ -1,6 +1,7 @@
 import math
 import random
 import threading
+import time
 
 import maze as m
 
@@ -96,7 +97,8 @@ class DecMCTS_Agent():
                  probs_size=10,
                  out_of_date_timeout=None,
                  comms_drop=None,
-                 comms_drop_rate=None):
+                 comms_drop_rate=None,
+                 comms_aware=False):
         self.horizon = horizon
         self.other_agent_info = {}
         self.executed_action_last_update = True
@@ -112,6 +114,7 @@ class DecMCTS_Agent():
         self.out_of_date_timeout = out_of_date_timeout
         self.time = 0
         self.probs_size = probs_size
+        self.comms_aware = comms_aware
 
         self.robot_id = robot_id
         self.start_loc = start_loc
@@ -156,7 +159,7 @@ class DecMCTS_Agent():
     def reset_tree(self):
         self.Xrn = []
         self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0,
-                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn)
+                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn, comms_aware=self.comms_aware)
 
     def get_Xrn_probs(self):
         self.Xrn.sort(reverse=True, key=(lambda node: node.discounted_score))
@@ -278,15 +281,15 @@ class DecMCTS_Agent():
                 our_actions, other_actions, our_q, other_qs, our_obs = \
                     uniform_sample_from_all_action_sequences(probs, self.other_agent_info)
                 f = 0
-                f_x = 0
+                f_x = 0             
                 for _ in range(self.determinization_iterations // 2):
                     f += compute_f(self.robot_id, our_actions, other_actions, self.observations_list, self.loc, our_obs,
-                                   self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
+                                   self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal(),self.comms_aware) \
                          / (self.determinization_iterations // 2)
 
                     f_x += compute_f(self.robot_id, node.get_action_sequence(), other_actions, self.observations_list,
                                      self.loc, our_obs,
-                                     self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
+                                     self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal(),self.comms_aware) \
                            / (self.determinization_iterations // 2)
 
                 e_f += np.prod(other_qs + [our_q]) * f
@@ -305,7 +308,7 @@ class DecMCTS_Agent():
 
 
 class DecMCTSNode():
-    def __init__(self, state, depth, maze_dims, Xrn, parent=None, parent_action=None):
+    def __init__(self, state, depth, maze_dims, Xrn, parent=None, parent_action=None, comms_aware=False):
         self.depth = depth
         self.state = state
         self.parent = parent
@@ -313,6 +316,7 @@ class DecMCTSNode():
         self.children = []
         self.Xrn = Xrn
         self.maze_dims = maze_dims
+        self.comms_aware = comms_aware
 
         # Incremented during backpropagation
         self.discounted_visits = 0
@@ -341,8 +345,12 @@ class DecMCTSNode():
 
             child_scores = []
             for i, child in enumerate(self.children):
-                f = child.discounted_score / child.discounted_visits
-                c = 2 * math.sqrt(max(np.log(t_d), 0) / t_js[i])
+                if child.discounted_visits == 0:
+                    f = child.discounted_score
+                    c = 2 * math.sqrt(max(np.log(t_d), 0))
+                else:
+                    f = child.discounted_score / child.discounted_visits
+                    c = 2 * math.sqrt(max(np.log(t_d), 0) / t_js[i])
                 child_scores.append(f + c_param * c)
 
             return self.children[np.argmax(np.asarray(child_scores))].select_node_d_uct(round_n)
@@ -377,7 +385,7 @@ class DecMCTSNode():
         self.unexplored_actions.remove(action)
         next_state = update_agent_state(self.state, action)
         child_node = DecMCTSNode(next_state, self.depth + 1, self.maze_dims, self.Xrn, parent=self,
-                                 parent_action=action)
+                                 parent_action=action, comms_aware=self.comms_aware)
 
         self.children.append(child_node)
         return child_node
@@ -416,26 +424,27 @@ class DecMCTSNode():
         avg = 0
         for _ in range(determinization_iterations):
             avg += compute_f(this_id, node_actions, other_agent_policies, real_obs, start_state.loc, self.state.obs,
-                             other_agent_info, horizon_time, time, goal) / determinization_iterations
+                             other_agent_info, horizon_time, time, goal,self.comms_aware) / determinization_iterations
 
         return avg
 
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
-              current_time, goal):
+              current_time, goal, comms_aware):
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
         maze.add_robot(id, agent.state.loc)
-        maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
+        if id < len(other_agent_policies):
+            maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
 
     # Score if we took no actions
     maze.add_robot(our_id, our_loc)
-    null_score = maze.get_score(real_obs)
+    null_score = maze.get_score(real_obs, comms_aware=comms_aware)
 
     # Score if we take our actual actions (simulates future plans)
     maze.simulate_i_steps(steps - current_time, our_id, our_policy)
-    actuated_score = maze.get_score(real_obs)
+    actuated_score = maze.get_score(real_obs, comms_aware=comms_aware)
     return actuated_score - null_score
 
 
