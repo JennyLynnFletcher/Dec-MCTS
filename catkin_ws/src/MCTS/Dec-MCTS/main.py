@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import multiprocessing
 import os
 import random
 
@@ -8,12 +9,16 @@ from std_msgs.msg import String, Empty
 from geometry_msgs.msg import Point
 
 import time
-from multiprocessing import Process
 import pygame
 
 import environment
 import decMCTS
 
+
+def call_update(x):
+    robot, is_execute_iteration = x
+    robot.update(is_execute_iteration)
+    return robot
 
 def main(comms_aware=True, num_robots=3, seed=0, name="default"):
     rospy.init_node('Main', anonymous=True)
@@ -58,16 +63,21 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default"):
         pygame.display.update()
         is_execute_iteration = ((i % 2) == 0)
         i += 1
-        threads = []
+        # processes = []
 
-        for r in robots:
-            thread = Process(target=r.update, args=(is_execute_iteration,))
-            threads.append(thread)
-        random.shuffle(threads)
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
+
+        with multiprocessing.Pool(num_robots) as p:
+            robots = p.map(call_update,[(r,is_execute_iteration) for r in robots])
+
+        # for r in robots:
+        #     process = Process(target=r.update, args=(is_execute_iteration,))
+        #     process.daemon = True
+        #     processes.append(process)
+        # random.shuffle(processes)
+        # for process in processes:
+        #     process.start()
+        # for process in processes:
+        #     process.join()
         complete = True
         for r in robots:
             complete = complete and r.complete

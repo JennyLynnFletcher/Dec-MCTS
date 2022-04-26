@@ -6,12 +6,10 @@ import time
 import maze as m
 
 import numpy as np
-from collections import defaultdict
 
 from scipy import stats
 from maze import Action
 from scipy import sparse
-from pprint import pprint
 
 import rospy
 from std_msgs.msg import String, Empty
@@ -219,6 +217,7 @@ class DecMCTS_Agent():
         probs = self.get_Xrn_probs()
         # print("reset probs to " + str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]))
 
+        print(execute_action)
         for i in range(self.prob_update_iterations):
             # print(str(self.robot_id) + " growing tree, "+ str(i))
             self.growSearchTree()
@@ -234,6 +233,7 @@ class DecMCTS_Agent():
 
             # print(str(self.robot_id) + " done with iteration "+ str(i))
 
+        print(execute_action)
         if execute_action:
             self.executed_action_last_update = True
             if len(probs) > 0:
@@ -278,6 +278,7 @@ class DecMCTS_Agent():
 
     def update_distribution(self, probs):
         newprobs = {}
+        print(len(probs))
         for node in probs.keys():
             # print("updating probability for node " + str(i) +" of "+str(len(probs)))
             q = probs[node]
@@ -304,14 +305,17 @@ class DecMCTS_Agent():
                     e_f_x += np.prod(list(other_qs.values())) * f_x
                 else:
                     e_f_x = 0
-            newprobs[node] = q - alpha * q * (
-                    (e_f - e_f_x) / self.beta
-                    + stats.entropy(list(probs.values())) + np.log(q))
+                newprobs[node] = q - alpha * q * (
+                        (e_f - e_f_x) / self.beta
+                        + stats.entropy(list(probs.values())) + np.log(q))
 
+        print(len(newprobs))
         # normalize
         factor = 1.0 / sum(newprobs.values())
         for k in probs.keys():
             probs[k] = newprobs[k] * factor
+
+        print(len(probs))
 
 
 class DecMCTSNode():
