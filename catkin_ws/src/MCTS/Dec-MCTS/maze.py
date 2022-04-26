@@ -79,14 +79,13 @@ class Maze:
             for dif in (-1, 1):
                 for neighbour in [(y + dif, x), (y, x + dif)]:
                     if neighbour in visited or (not self.walls[neighbour]):
-                        continue
-                    if self.walls[neighbour] != 2:
-                        visited.add(neighbour)
-                        distance[neighbour] = distance[current] + 1
-                        max_distance = max(distance[neighbour], max_distance)
-                        if (y,x) in goal_connected and not agent_obs[neighbour]:
-                            goal_connected.add(neighbour)
-                        bfs_queue.append(neighbour)
+                        continue                    
+                    visited.add(neighbour)
+                    distance[neighbour] = distance[current] + 1
+                    max_distance = max(distance[neighbour], max_distance)
+                    if (y,x) in goal_connected and not agent_obs[neighbour]:
+                        goal_connected.add(neighbour)
+                    bfs_queue.append(neighbour)
 
         # newt = time()
         # print(newt - t, "bfs")
@@ -139,5 +138,6 @@ class Action(Enum):
 
 def generate_maze(obs, goal):
     maze_walls = maze_gen.fill_in_maze(obs.copy())
+    maze_walls = maze_gen.fill_in_maze(maze_walls.maximum(obs.copy()))
 
     return Maze((goal[1],goal[0]), maze_walls)

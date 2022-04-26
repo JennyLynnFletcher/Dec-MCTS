@@ -165,6 +165,7 @@ class DecMCTS_Agent():
         self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0,
                                 maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn,comms_aware_planning=self.comms_aware_planning)
 
+
     def get_Xrn_probs(self):
         self.Xrn.sort(reverse=True, key=(lambda node: node.discounted_score))
         probs = {}
