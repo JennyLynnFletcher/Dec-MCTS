@@ -53,6 +53,7 @@ class Environment():
         self.complete = False
         self.robot_list = {}
         self.robot_colors = {}
+        self.obss = {}
         self.grid_size = 20
         self.num_robots = num_robots
 
@@ -73,7 +74,6 @@ class Environment():
         self.robot_colors[robot_id] = colour_order[len(self.robot_list) - 1 % len(colour_order)]
         print("robot_id: ", robot_id)
         self.render()
-        
 
     def get_walls_from_loc(self, loc):
         '''
@@ -119,7 +119,29 @@ class Environment():
                                color=self.robot_colors[robot_id].value,
                                center=(x * self.grid_size,y*self.grid_size),
                                radius=0.3 * self.grid_size)
+
+        obs_pos = [0, 0]
+        for robot_id in self.obss:
+            obs_pos[0] += 1
+            obs_pos[1] -= 1
+            if obs_pos[1] < 0:
+                obs_pos[1] = obs_pos[0]
+                obs_pos[0] = 0
+            for path_y, path_x, value in zip(*sparse.find(self.obss[robot_id])):
+                rect = (
+                    (path_x - 0.5 + obs_pos * self.width) * self.grid_size,
+                    (path_y - 0.5 + obs_pos * self.height) * self.grid_size,
+                    self.grid_size,
+                    self.grid_size
+                )
+                ispath = - value + 2
+                pygame.draw.rect(self.gameDisplay, (200*ispath, 200*ispath, 200*ispath), rect, width=0)
+
         #pygame.display.update()
+
+    def update_obs(self, obs, robot_id):
+        self.obss[robot_id] = obs
+        self.render()
 
     def update_loc(self, loc_msg, robot_id):
         '''
