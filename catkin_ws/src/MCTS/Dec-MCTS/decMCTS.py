@@ -1,6 +1,7 @@
 import math
 import random
 import threading
+import time
 
 import maze as m
 
@@ -219,6 +220,7 @@ class DecMCTS_Agent():
                 message = self.package_comms(probs)
                 self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
+            time.sleep(random.random()*0.5)
             # print(str(self.robot_id) + " unpacking comms, "+ str(i))
             self.unpack_comms()
             self.cool_beta()
@@ -278,7 +280,7 @@ class DecMCTS_Agent():
                 our_actions, other_actions, our_q, other_qs, our_obs = \
                     uniform_sample_from_all_action_sequences(probs, self.other_agent_info)
                 f = 0
-                f_x = 0
+                f_x = 0             
                 for _ in range(self.determinization_iterations // 2):
                     f += compute_f(self.robot_id, our_actions, other_actions, self.observations_list, self.loc, our_obs,
                                    self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal()) \
@@ -341,8 +343,12 @@ class DecMCTSNode():
 
             child_scores = []
             for i, child in enumerate(self.children):
-                f = child.discounted_score / child.discounted_visits
-                c = 2 * math.sqrt(max(np.log(t_d), 0) / t_js[i])
+                if child.discounted_visits == 0:
+                    f = child.discounted_score
+                    c = 2 * math.sqrt(max(np.log(t_d), 0))
+                else:
+                    f = child.discounted_score / child.discounted_visits
+                    c = 2 * math.sqrt(max(np.log(t_d), 0) / t_js[i])
                 child_scores.append(f + c_param * c)
 
             return self.children[np.argmax(np.asarray(child_scores))].select_node_d_uct(round_n)
