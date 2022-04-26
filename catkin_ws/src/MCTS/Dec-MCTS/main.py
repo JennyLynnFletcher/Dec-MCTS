@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import random
 
 import rospy
@@ -13,16 +14,17 @@ import pygame
 import environment
 import decMCTS
 
-def main(comms_aware=True, num_robots=3, seed=0):
+def main(comms_aware=True, num_robots=3, seed=0, name="default"):
     rospy.init_node('Main', anonymous=True)
 
+    os.mkdir("output/"+name)
 
-    width = 11
-    height=11
+    width = 21
+    height=21
 
 
     goal = (random.randrange(0,width//2)*2+1, random.randrange(0,height//2)*2+1)
-    random.seed(0)
+    random.seed(seed)
     env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=0)
 
     robot_start_locations = []
@@ -65,7 +67,7 @@ def main(comms_aware=True, num_robots=3, seed=0):
         for r in robots:
             complete = complete and r.complete
         pygame.display.update()
-        pygame.image.save(env.gameDisplay, "output/Frame_"+str(i)+".jpg")
+        pygame.image.save(env.gameDisplay, "output/"+name+"/frame_"+str(i)+".jpg")
         
     pygame.quit()
     with open('./results.txt', 'a') as f:
@@ -73,5 +75,5 @@ def main(comms_aware=True, num_robots=3, seed=0):
 
     
 for i in range(10):
-    main(comms_aware=True, num_robots=10, seed=i)
-    main(comms_aware=False, num_robots=10, seed=i)
+    main(comms_aware=True, num_robots=10, seed=i, name="21x21_comms_"+str(i))
+    main(comms_aware=False, num_robots=10, seed=i, name="21x21_nocoms_"+str(i))
