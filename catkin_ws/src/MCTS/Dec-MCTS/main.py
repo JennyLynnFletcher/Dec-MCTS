@@ -13,12 +13,11 @@ import pygame
 import environment
 import decMCTS
 
-if __name__ == '__main__':
+def main(comms_aware=True, num_robots=3, seed=0):
     rospy.init_node('Main', anonymous=True)
 
     width = 11
     height=11
-    num_robots=5
 
     goal = (3, 5)
     random.seed(0)
@@ -63,3 +62,10 @@ if __name__ == '__main__':
         pygame.display.update()
         
     pygame.quit()
+    with open('./results.txt', 'a') as f:
+        f.writeline("Comms_aware: ", comms_aware, ", num_robots: ", num_robots, ", Iterations: ", i)
+
+    
+for i in range(10):
+    main(comms_aware=True, num_robots=3, seed=i)
+    main(comms_aware=False, num_robots=3, seed=i)
