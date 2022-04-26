@@ -17,6 +17,8 @@ from geometry_msgs.msg import Point
 import pickle
 import codecs
 
+import multiprocessing
+
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.90
 alpha = 0.01
@@ -68,10 +70,9 @@ class Agent_Info():
 
 # ha ha ha, I'm so sorry if you have to read this part
 def uniform_sample_from_all_action_sequences(probs, other_agent_info):
-
     other_actions = {}
     other_qs = {}
-    for i,x in other_agent_info.items():
+    for i, x in other_agent_info.items():
         chosen_node = random.choice(list(x.probs.keys()))
         chosen_q = x.probs[chosen_node]
         chosen_actions = chosen_node.get_action_sequence()
@@ -83,6 +84,39 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
     our_obs = our_node.state.obs
     our_actions = our_node.get_action_sequence()
     return our_actions, other_actions, our_q, other_qs, our_obs
+
+
+def get_new_prob(i, node,probs,distribution_sample_iterations,other_agent_info,determinization_iterations,robot_id,observations_list,loc,horizon,time,goal,comms_aware_planning,beta):
+    # print("updating probability for node " + str(i) +" of "+str(len(probs)))
+    q = probs[node]
+    e_f = 0
+    e_f_x = 0
+    for _ in range(distribution_sample_iterations):
+        # Evaluate nodes based off of what we actually know
+        our_actions, other_actions, our_q, other_qs, our_obs = \
+            uniform_sample_from_all_action_sequences(probs, other_agent_info)
+        f = 0
+        f_x = 0
+        for _ in range(determinization_iterations // 2):
+            f += compute_f(robot_id, our_actions, other_actions, observations_list, loc, our_obs,
+                           other_agent_info, horizon, time, goal,
+                           comms_aware_planning=comms_aware_planning) \
+                 / (determinization_iterations // 2)
+
+            f_x += compute_f(robot_id, node.get_action_sequence(), other_actions, observations_list,
+                             loc, our_obs,
+                             other_agent_info, horizon, time,goal,
+                             comms_aware_planning=comms_aware_planning) \
+                   / (determinization_iterations // 2)
+
+        e_f += np.prod(list(other_qs.values()) + [our_q]) * f
+        if len(other_qs) > 0:
+            e_f_x += np.prod(list(other_qs.values())) * f_x
+        else:
+            e_f_x = 0
+        return i, q - alpha * q * (
+                (e_f - e_f_x) / beta
+                + stats.entropy(list(probs.values())) + np.log(q))
 
 
 class DecMCTS_Agent():
@@ -133,8 +167,8 @@ class DecMCTS_Agent():
         msg = Point(x=self.loc[0], y=self.loc[1])
         self.pub_loc.publish(msg)
 
-        print("Creating robot " +str(self.robot_id)+" at position "+str(start_loc)+
-              ", comms aware planning is "+ ("enabled" if comms_aware_planning  else "disabled"))
+        print("Creating robot " + str(self.robot_id) + " at position " + str(start_loc) +
+              ", comms aware planning is " + ("enabled" if comms_aware_planning else "disabled"))
 
     def add_edges_to_observations(self):
         for i in range(self.env.width):
@@ -162,8 +196,8 @@ class DecMCTS_Agent():
     def reset_tree(self):
         self.Xrn = []
         self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0,
-                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn,comms_aware_planning=self.comms_aware_planning)
-
+                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn,
+                                comms_aware_planning=self.comms_aware_planning)
 
     def get_Xrn_probs(self):
         self.Xrn.sort(reverse=True, key=(lambda node: node.discounted_score))
@@ -178,11 +212,14 @@ class DecMCTS_Agent():
     def unpack_comms(self):
         for message_str in self.reception_queue:
             message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
-            distance = max(math.sqrt((message.state.loc[0] - self.loc[0])**2 + (message.state.loc[1] - self.loc[1])**2), 1)
+            distance = max(
+                math.sqrt((message.state.loc[0] - self.loc[0]) ** 2 + (message.state.loc[1] - self.loc[1]) ** 2), 1)
             if self.comms_drop == "uniform" and random.random() < self.comms_drop_rate:
-                print("Packet drop")
-            elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate/(distance)**2:
-                print("Packet drop")
+                pass
+                #print("Packet drop")
+            elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate / (distance) ** 2:
+                pass
+                #print("Packet drop")
             else:
                 robot_id = message.robot_id
                 # If seen before
@@ -217,7 +254,6 @@ class DecMCTS_Agent():
         probs = self.get_Xrn_probs()
         # print("reset probs to " + str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]))
 
-        print(execute_action)
         for i in range(self.prob_update_iterations):
             # print(str(self.robot_id) + " growing tree, "+ str(i))
             self.growSearchTree()
@@ -233,7 +269,6 @@ class DecMCTS_Agent():
 
             # print(str(self.robot_id) + " done with iteration "+ str(i))
 
-        print(execute_action)
         if execute_action:
             self.executed_action_last_update = True
             if len(probs) > 0:
@@ -277,49 +312,26 @@ class DecMCTS_Agent():
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
     def update_distribution(self, probs):
-        newprobs = {}
-        print(len(probs))
-        for node in probs.keys():
-            # print("updating probability for node " + str(i) +" of "+str(len(probs)))
-            q = probs[node]
-            e_f = 0
-            e_f_x = 0
-            for _ in range(self.distribution_sample_iterations):
-                # Evaluate nodes based off of what we actually know
-                our_actions, other_actions, our_q, other_qs, our_obs = \
-                    uniform_sample_from_all_action_sequences(probs, self.other_agent_info)
-                f = 0
-                f_x = 0
-                for _ in range(self.determinization_iterations // 2):
-                    f += compute_f(self.robot_id, our_actions, other_actions, self.observations_list, self.loc, our_obs,
-                                   self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal(),comms_aware_planning=self.comms_aware_planning) \
-                         / (self.determinization_iterations // 2)
+        enumerated_keys = list(enumerate(list(probs.keys())))
 
-                    f_x += compute_f(self.robot_id, node.get_action_sequence(), other_actions, self.observations_list,
-                                     self.loc, our_obs,
-                                     self.other_agent_info, self.horizon, self.get_time(), self.env.get_goal(),comms_aware_planning=self.comms_aware_planning) \
-                           / (self.determinization_iterations // 2)
+        args = [(i, node, probs, self.distribution_sample_iterations, self.other_agent_info, self.determinization_iterations,
+          self.robot_id, self.observations_list, self.loc, self.horizon, self.get_time(),
+          self.env.get_goal(), self.comms_aware_planning, self.beta) for i, node in enumerated_keys]
 
-                e_f += np.prod(list(other_qs.values()) + [our_q]) * f
-                if len(other_qs) > 0:
-                    e_f_x += np.prod(list(other_qs.values())) * f_x
-                else:
-                    e_f_x = 0
-                newprobs[node] = q - alpha * q * (
-                        (e_f - e_f_x) / self.beta
-                        + stats.entropy(list(probs.values())) + np.log(q))
+        with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
 
-        print(len(newprobs))
-        # normalize
-        factor = 1.0 / sum(newprobs.values())
-        for k in probs.keys():
-            probs[k] = newprobs[k] * factor
+            newprobs = p.starmap(get_new_prob, args)
+            key_dict = dict(enumerated_keys)
+            # normalize
+            factor = 1.0 / sum([prob for i, prob in newprobs])
+            for i, prob in newprobs:
+                probs[key_dict[i]] = prob*factor
 
-        print(len(probs))
+
 
 
 class DecMCTSNode():
-    def __init__(self, state, depth, maze_dims, Xrn, parent=None, parent_action=None,comms_aware_planning=False):
+    def __init__(self, state, depth, maze_dims, Xrn, parent=None, parent_action=None, comms_aware_planning=False):
         self.depth = depth
         self.state = state
         self.parent = parent
@@ -400,7 +412,7 @@ class DecMCTSNode():
         self.unexplored_actions.remove(action)
         next_state = update_agent_state(self.state, action)
         child_node = DecMCTSNode(next_state, self.depth + 1, self.maze_dims, self.Xrn, parent=self,
-                                 parent_action=action,comms_aware_planning=self.comms_aware_planning)
+                                 parent_action=action, comms_aware_planning=self.comms_aware_planning)
 
         self.children.append(child_node)
         return child_node
@@ -439,20 +451,21 @@ class DecMCTSNode():
         avg = 0
         for _ in range(determinization_iterations):
             avg += compute_f(this_id, node_actions, other_agent_policies, real_obs, start_state.loc, self.state.obs,
-                             other_agent_info, horizon_time, time, goal, comms_aware_planning=self.comms_aware_planning) / determinization_iterations
+                             other_agent_info, horizon_time, time, goal,
+                             comms_aware_planning=self.comms_aware_planning) / determinization_iterations
 
         return avg
 
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
-              current_time, goal,comms_aware_planning):
+              current_time, goal, comms_aware_planning):
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
         maze.add_robot(id, agent.state.loc)
-        #if id in other_agent_policies.keys():
+        # if id in other_agent_policies.keys():
         maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
-        #else:
+        # else:
         #    print(id," not in other_agent policies")
         #    print("other agent policies is ",list(other_agent_policies.keys()))
         #    print("other agent info is ",list(other_agent_info.keys()))
