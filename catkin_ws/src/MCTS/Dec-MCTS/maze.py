@@ -55,23 +55,52 @@ class Maze:
         total_explorable_area = ((h - 2) * (w - 2) + h + w - 5) / 2
         percent_explored = n_xplored / total_explorable_area
 
+        # newt = time()
+        # print(newt - t, "init")
+        # t = time()
+
         distance = {self.goal: 0}
         visited = set()
         visited.add(self.goal)
         goal_connected = {self.goal}
+        bfs_queue = collections.deque()
+        bfs_queue.append(self.goal)
         max_distance = 0
 
+        # newt = time()
+        # print(newt - t, "bfs_init")
+        # t = time()
         for x, y in positions_all:
             self.walls[y,x] = 1
+
+        while bfs_queue:
+            current = bfs_queue.pop()
+            y, x = current
+            for dif in (-1, 1):
+                for neighbour in [(y + dif, x), (y, x + dif)]:
+                    if neighbour in visited or (not self.walls[neighbour]):
+                        continue                    
+                    visited.add(neighbour)
+                    distance[neighbour] = distance[current] + 1
+                    max_distance = max(distance[neighbour], max_distance)
+                    if (y,x) in goal_connected and not agent_obs[neighbour]:
+                        goal_connected.add(neighbour)
+                    bfs_queue.append(neighbour)
+
+        # newt = time()
+        # print(newt - t, "bfs")
+        # t = time()
+
+        goal_component_size_pct = len(goal_connected) / total_explorable_area
+            
         
-        
-        robot_distances = [abs(self.goal[0] - position[1]) + abs(self.goal[1] - position[0]) for position in positions_all]  
-        max_distance = max(w - self.goal[0], self.goal[0]) + max(h - self.goal[1], self.goal[1])
-     
+        robot_distances = [distance[(position[1], position[0])] if (position[1], position[0]) in distance.keys() else max_distance for position in positions_all]
+            
+
+            
         # TODO: think about the weights on these things, for now they are all equal
         #  which is a really bad idea since percent explored < 1 and others are >> 1
-
-        score = - sum(robot_distances)/(len(robot_distances) * max_distance) + 20*percent_explored
+        score = - sum(robot_distances)/(len(robot_distances) * max_distance) + 10*percent_explored - goal_component_size_pct
 
         if comms_aware:
             max_dist = 0
@@ -88,6 +117,9 @@ class Maze:
                     sum_dists += dist
 
             score -= max_dist / max_distance
+
+        # newt = time()
+        # print(newt - t, "score")
 
         return score
 

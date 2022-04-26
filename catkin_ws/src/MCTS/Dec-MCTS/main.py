@@ -92,5 +92,5 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default"):
 
 
 for i in range(10):
-    main(comms_aware=True, num_robots=3, seed=i, name="11x11_comms_" + str(i))
-    main(comms_aware=False, num_robots=3, seed=i, name="11x11_nocoms_" + str(i))
+    main(comms_aware=True, num_robots=5, seed=i, name="11x11_comms_" + str(i))
+    main(comms_aware=False, num_robots=5, seed=i, name="11x11_nocoms_" + str(i))
