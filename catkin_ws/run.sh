@@ -1,0 +1,29 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Illegal number of parameters"
+    exit -1
+fi
+
+
+. ./devel/setup.bash
+
+end=$(expr $1 + 100)
+for i in $(seq $1 $end)
+do
+    for j in $(seq 3)
+    do
+	seed=$(expr $(expr $i \* 100) + $j)
+	echo "iteration $i $j seed $seed"
+	rosrun MCTS main.py withcomms_notimeout "$seed" 5 11 True 0 &>"logs/log1_$seed" &
+	rosrun MCTS main.py withoutcomms_notimeout "$seed" 5 11 False 0 &>"logs/log2_$seed" &
+	rosrun MCTS main.py withcomms_timeout "$seed" 5 11 True 3 &>"logs/log3_$seed" &
+	rosrun MCTS main.py withoutcomms_timeout "$seed" 5 11 False 3 &>"logs/log4_$seed" &
+    done	     
+    for job in `jobs -p`
+    do
+	echo $job
+	wait $job
+    done
+done
+

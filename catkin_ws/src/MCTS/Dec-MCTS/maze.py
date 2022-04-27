@@ -44,7 +44,7 @@ class Maze:
         action = random.choice(list(Action))
         return self.try_action(agent_id, action)
 
-    def get_score(self, agent_obs, comms_aware=False):
+    def get_score(self, agent_obs, comms_aware_planning=False):
         # print(sparse.lil_matrix(agent_obs).toarray())
         # t = time()
         w = self.walls.shape[1]
@@ -102,7 +102,7 @@ class Maze:
         #  which is a really bad idea since percent explored < 1 and others are >> 1
         score = - sum(robot_distances)/(len(robot_distances) * max_distance) + 10*percent_explored - goal_component_size_pct
 
-        if comms_aware:
+        if comms_aware_planning:
             max_dist = 0
             sum_dists = 0
             n_dists = 0
