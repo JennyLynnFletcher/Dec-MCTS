@@ -139,7 +139,7 @@ class DecMCTS_Agent():
         self.tree = None
         self.Xrn = []
         self.reception_queue = []
-        self.pub_obs = rospy.Publisher('robot_obs_' + name, String, queue_size=10)
+        self.pub_obs = rospy.Publisher('robot_obs_' + name, String, queue_size=20)
         self.update_iterations = 0
         self.prob_update_iterations = prob_update_iterations
         self.plan_growth_iterations = plan_growth_iterations
@@ -157,7 +157,7 @@ class DecMCTS_Agent():
         self.loc = start_loc
         self.loc_log = [start_loc]
         self.env = env
-        self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id) + "_" + name, Point, queue_size=10)
+        self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id) + "_" + name, Point, queue_size=20)
         self.comms_drop = comms_drop
         self.comms_drop_rate = comms_drop_rate
         self.complete = False
@@ -208,12 +208,13 @@ class DecMCTS_Agent():
         return probs
 
     def package_comms(self, probs):
-        print(self.robot_id, " has probability sum ", sum(list(probs.values())))
+        print(self.robot_id, " has probability sum ", sum(list(probs.values())),"and length",len(probs.values()))
         return Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time())
 
     def unpack_comms(self):
         for message_str in self.reception_queue:
             message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
+            print(self.robot_id,"receiving message from",message.robot_id,"with probability sum",sum(list(message.probs.values())))
             if message.robot_id != self.robot_id:
                 distance = max(
                     math.sqrt((message.state.loc[0] - self.loc[0]) ** 2 + (message.state.loc[1] - self.loc[1]) ** 2), 1)
@@ -265,8 +266,8 @@ class DecMCTS_Agent():
 
         for i in range(self.prob_update_iterations):
             self.growSearchTree()
-            if len(probs) > 0:
-                self.update_distribution(probs)
+            if len(probs.keys()) > 0:
+                probs = self.update_distribution(probs)
                 message = self.package_comms(probs)
                 self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
@@ -316,21 +317,23 @@ class DecMCTS_Agent():
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
     def update_distribution(self, probs):
+        print("before:",len(probs.keys()))
 
         args = [(node, probs, self.distribution_sample_iterations, self.other_agent_info,
                  self.determinization_iterations,
                  self.robot_id, self.observations_list, self.loc, self.horizon, self.get_time(),
                  self.env.get_goal(), self.comms_aware_planning, self.beta) for node in list(probs.keys())]
 
-        newprobs = map(get_new_prob, args)
+        newprobs = list(map(get_new_prob, args))
+        print("during: ",len(newprobs))
         probs = {}
 
-        print(len(probs))
         # normalize
-        factor = 1.0 / sum([prob for node, prob in newprobs])
+        factor = sum([prob for node, prob in newprobs])
         for node, prob in newprobs:
-            probs[node] = prob * factor
-        print(len(probs))
+            probs[node] = prob / factor
+        print("after",len(probs.keys()),sum(list(probs.values())))
+        return probs
 
 
 
