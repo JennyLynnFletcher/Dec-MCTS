@@ -18,7 +18,6 @@ from geometry_msgs.msg import Point
 import pickle
 import codecs
 
-import multiprocessing
 
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.90
@@ -330,16 +329,15 @@ class DecMCTS_Agent():
           self.robot_id, self.observations_list, self.loc, self.horizon, self.get_time(),
           self.env.get_goal(), self.comms_aware_planning, self.beta) for i, node in enumerated_keys]
 
-        with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
 
-            #newprobs = p.starmap(get_new_prob, args)
-            newprobs = map(get_new_prob, args)
+        #newprobs = p.starmap(get_new_prob, args)
+        newprobs = map(get_new_prob, args)
 
-            key_dict = dict(enumerated_keys)
-            # normalize
-            factor = 1.0 / sum([prob for i, prob in newprobs])
-            for i, prob in newprobs:
-                probs[key_dict[i]] = prob*factor
+        key_dict = dict(enumerated_keys)
+        # normalize
+        factor = 1.0 / sum([prob for i, prob in newprobs])
+        for i, prob in newprobs:
+            probs[key_dict[i]] = prob*factor
 
 
 

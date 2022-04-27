@@ -72,9 +72,6 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
         i += 1
         threads = []
 
-        # with multiprocessing.Pool(num_robots) as p:
-        #     robots = p.map(call_update,[(r,is_execute_iteration) for r in robots])
-
         for r in robots:
             thread = threading.Thread(target=r.update, args=(is_execute_iteration,))
             threads.append(thread)
