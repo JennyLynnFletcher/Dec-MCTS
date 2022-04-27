@@ -95,7 +95,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
     with open('./results.txt', 'a') as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         f.write("Seed: " + str(seed) + " comms_aware: " + str(comms_aware) + " num_robots: " + str(num_robots) + " Iterations: " + str(i) + " Times forgot other agent: "
-                + str([agent.times_removed_other_agent for agent in robots]))
+                + str([agent.times_removed_other_agent for agent in robots]) + "\n")
         fcntl.flock(f, fcntl.LOCK_UN)
 
 if __name__ == "__main__":
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             seed = int(sys.argv[2])
             num_robots = int(sys.argv[3])
             maze_width = int(sys.argv[4])
-            comms = bool(sys.argv[5])
+            comms = sys.argv[5].strip() == "True"
             out_of_date_timeout = int(sys.argv[6]) if int(sys.argv[6]) > 0 else None
 
             main(comms_aware=comms, num_robots=num_robots, seed=seed,
