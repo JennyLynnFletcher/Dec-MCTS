@@ -106,7 +106,7 @@ if __name__ == "__main__":
             seed = int(sys.argv[2])
             num_robots = int(sys.argv[3])
             maze_width = int(sys.argv[4])
-            comms = bool(sys.argv[5])
+            comms = sys.argv[5].strip() == "True"
             out_of_date_timeout = int(sys.argv[6]) if int(sys.argv[6]) > 0 else None
 
             main(comms_aware=comms, num_robots=num_robots, seed=seed,

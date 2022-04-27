@@ -173,6 +173,7 @@ class DecMCTS_Agent():
 
         print("Creating robot " + str(self.robot_id) + " at position " + str(start_loc) +
               ", comms aware planning is " + ("enabled" if comms_aware_planning else "disabled"))
+        print(self.comms_aware_planning)
 
     def add_edges_to_observations(self):
         for i in range(self.env.width):
