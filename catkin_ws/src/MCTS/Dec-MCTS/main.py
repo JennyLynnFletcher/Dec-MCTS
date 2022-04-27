@@ -21,7 +21,7 @@ def main(comms_aware=True, num_robots=3, seed=0):
 
     goal = (3, 5)
     random.seed(0)
-    env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=0)
+    env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=seed)
 
     robot_start_locations = []
     for _ in range(num_robots):
@@ -67,5 +67,5 @@ def main(comms_aware=True, num_robots=3, seed=0):
 
     
 for i in range(10):
-    main(comms_aware=True, num_robots=3, seed=i)
-    main(comms_aware=False, num_robots=3, seed=i)
+    main(comms_aware=True, num_robots=5, seed=i)
+    main(comms_aware=False, num_robots=5, seed=i)
