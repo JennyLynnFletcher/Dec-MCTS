@@ -216,25 +216,26 @@ class DecMCTS_Agent():
     def unpack_comms(self):
         for message_str in self.reception_queue:
             message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
-            distance = max(
-                math.sqrt((message.state.loc[0] - self.loc[0]) ** 2 + (message.state.loc[1] - self.loc[1]) ** 2), 1)
-            if self.comms_drop == "uniform" and random.random() < self.comms_drop_rate:
-                pass
-                #print("Packet drop")
-            elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate / (distance) ** 2:
-                pass
-                #print("Packet drop")
+            if message.robot_id != self.robot_id:
+                distance = max(
+                    math.sqrt((message.state.loc[0] - self.loc[0]) ** 2 + (message.state.loc[1] - self.loc[1]) ** 2), 1)
+                if self.comms_drop == "uniform" and random.random() < self.comms_drop_rate:
+                    pass
+                    #print("Packet drop")
+                elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate / (distance) ** 2:
+                    pass
+                    #print("Packet drop")
 
-            else:
-                robot_id = message.robot_id
-                # If seen before
-                if robot_id in self.other_agent_info.keys():
-                    # If fresh message
-                    if message.time >= self.other_agent_info[robot_id].time:
-                        self.other_agent_info[robot_id] = message
                 else:
-                    self.other_agent_info[robot_id] = message
-                self.observations_list = merge_observations(self.observations_list, message.state.obs)
+                    robot_id = message.robot_id
+                    # If seen before
+                    if robot_id in self.other_agent_info.keys():
+                        # If fresh message
+                        if message.time >= self.other_agent_info[robot_id].time:
+                            self.other_agent_info[robot_id] = message
+                    else:
+                        self.other_agent_info[robot_id] = message
+                    self.observations_list = merge_observations(self.observations_list, message.state.obs)
         time = self.get_time()
         # Filter out-of-date messages
         if self.out_of_date_timeout is not None:
