@@ -15,7 +15,6 @@ import pygame
 
 import environment
 import decMCTS
-import logging
 
 
 def call_update(x):
@@ -114,7 +113,6 @@ if __name__ == "__main__":
             fullname = name + "__" + str(maze_width) + "x" + str(maze_width) + "__comms_" + str(
                      comms) + "__timeout_" + str(
                      out_of_date_timeout) + "__seed_" + str(seed)
-            logging.basicConfig(filename='./MyLog'+fullname+'.log', level=logging.DEBUG)
 
 
             main(comms_aware=comms, num_robots=num_robots, seed=seed,

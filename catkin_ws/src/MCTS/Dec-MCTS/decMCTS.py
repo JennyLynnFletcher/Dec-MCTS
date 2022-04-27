@@ -18,7 +18,6 @@ from geometry_msgs.msg import Point
 import pickle
 import codecs
 
-
 c_param = 0.5  # Exploration constant, greater than 1/sqrt(8)
 discount_param = 0.90
 alpha = 0.01
@@ -87,8 +86,7 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
 
 
 def get_new_prob(x):
-    i, node, probs, distribution_sample_iterations, other_agent_info, determinization_iterations, robot_id, observations_list, loc, horizon, time, goal, comms_aware_planning, beta = x
-    #print("updating probability for node " + str(i) +" of "+str(len(probs))+" on pid "+str(os.getpid()))
+    node, probs, distribution_sample_iterations, other_agent_info, determinization_iterations, robot_id, observations_list, loc, horizon, time, goal, comms_aware_planning, beta = x
     q = probs[node]
     e_f = 0
     e_f_x = 0
@@ -106,7 +104,7 @@ def get_new_prob(x):
 
             f_x += compute_f(robot_id, node.get_action_sequence(), other_actions, observations_list,
                              loc, our_obs,
-                             other_agent_info, horizon, time,goal,
+                             other_agent_info, horizon, time, goal,
                              comms_aware_planning=comms_aware_planning) \
                    / (determinization_iterations // 2)
 
@@ -115,7 +113,7 @@ def get_new_prob(x):
             e_f_x += np.prod(list(other_qs.values())) * f_x
         else:
             e_f_x = 0
-        return i, q - alpha * q * (
+        return node, q - alpha * q * (
                 (e_f - e_f_x) / beta
                 + stats.entropy(list(probs.values())) + np.log(q))
 
@@ -141,7 +139,7 @@ class DecMCTS_Agent():
         self.tree = None
         self.Xrn = []
         self.reception_queue = []
-        self.pub_obs = rospy.Publisher('robot_obs_'+name, String, queue_size=10)
+        self.pub_obs = rospy.Publisher('robot_obs_' + name, String, queue_size=10)
         self.update_iterations = 0
         self.prob_update_iterations = prob_update_iterations
         self.plan_growth_iterations = plan_growth_iterations
@@ -172,7 +170,6 @@ class DecMCTS_Agent():
 
         print("Creating robot " + str(self.robot_id) + " at position " + str(start_loc) +
               ", comms aware planning is " + ("enabled" if comms_aware_planning else "disabled"))
-        print(self.comms_aware_planning)
 
     def add_edges_to_observations(self):
         for i in range(self.env.width):
@@ -211,6 +208,7 @@ class DecMCTS_Agent():
         return probs
 
     def package_comms(self, probs):
+        print(self.robot_id, " has probability sum ", sum(list(probs.values())))
         return Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time())
 
     def unpack_comms(self):
@@ -221,10 +219,10 @@ class DecMCTS_Agent():
                     math.sqrt((message.state.loc[0] - self.loc[0]) ** 2 + (message.state.loc[1] - self.loc[1]) ** 2), 1)
                 if self.comms_drop == "uniform" and random.random() < self.comms_drop_rate:
                     pass
-                    #print("Packet drop")
+                    # print("Packet drop")
                 elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate / (distance) ** 2:
                     pass
-                    #print("Packet drop")
+                    # print("Packet drop")
 
                 else:
                     robot_id = message.robot_id
@@ -264,22 +262,16 @@ class DecMCTS_Agent():
             self.executed_action_last_update = False
 
         probs = self.get_Xrn_probs()
-        # print("reset probs to " + str([(key.get_action_sequence(),probs[key]) for key in probs.keys()]))
 
         for i in range(self.prob_update_iterations):
-            # print(str(self.robot_id) + " growing tree, "+ str(i))
             self.growSearchTree()
             if len(probs) > 0:
-                # print(str(self.robot_id) + " computing probs, " + str(i))
                 self.update_distribution(probs)
                 message = self.package_comms(probs)
                 self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
-            # print(str(self.robot_id) + " unpacking comms, "+ str(i))
             self.unpack_comms()
             self.cool_beta()
-
-            # print(str(self.robot_id) + " done with iteration "+ str(i))
 
         if execute_action:
             self.executed_action_last_update = True
@@ -324,22 +316,21 @@ class DecMCTS_Agent():
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
     def update_distribution(self, probs):
-        enumerated_keys = list(enumerate(list(probs.keys())))
 
-        args = [(i, node, probs, self.distribution_sample_iterations, self.other_agent_info, self.determinization_iterations,
-          self.robot_id, self.observations_list, self.loc, self.horizon, self.get_time(),
-          self.env.get_goal(), self.comms_aware_planning, self.beta) for i, node in enumerated_keys]
+        args = [(node, probs, self.distribution_sample_iterations, self.other_agent_info,
+                 self.determinization_iterations,
+                 self.robot_id, self.observations_list, self.loc, self.horizon, self.get_time(),
+                 self.env.get_goal(), self.comms_aware_planning, self.beta) for node in list(probs.keys())]
 
-
-        #newprobs = p.starmap(get_new_prob, args)
         newprobs = map(get_new_prob, args)
+        probs = {}
 
-        key_dict = dict(enumerated_keys)
+        print(len(probs))
         # normalize
-        factor = 1.0 / sum([prob for i, prob in newprobs])
-        for i, prob in newprobs:
-            probs[key_dict[i]] = prob*factor
-
+        factor = 1.0 / sum([prob for node, prob in newprobs])
+        for node, prob in newprobs:
+            probs[node] = prob * factor
+        print(len(probs))
 
 
 
@@ -476,12 +467,7 @@ def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_o
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
         maze.add_robot(id, agent.state.loc)
-        # if id in other_agent_policies.keys():
         maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
-        # else:
-        #    print(id," not in other_agent policies")
-        #    print("other agent policies is ",list(other_agent_policies.keys()))
-        #    print("other agent info is ",list(other_agent_info.keys()))
 
     # Score if we took no actions
     maze.add_robot(our_id, our_loc)
