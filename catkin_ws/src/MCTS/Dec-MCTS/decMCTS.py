@@ -98,14 +98,15 @@ class DecMCTS_Agent():
                  out_of_date_timeout=None,
                  comms_drop=None,
                  comms_drop_rate=None,
-                 comms_aware_planning=False):
+                 comms_aware_planning=False,
+                 name="default"):
         self.horizon = horizon
         self.other_agent_info = {}
         self.executed_action_last_update = True
         self.tree = None
         self.Xrn = []
         self.reception_queue = []
-        self.pub_obs = rospy.Publisher('robot_obs', String, queue_size=10)
+        self.pub_obs = rospy.Publisher('robot_obs_'+name, String, queue_size=10)
         self.update_iterations = 0
         self.prob_update_iterations = prob_update_iterations
         self.plan_growth_iterations = plan_growth_iterations
@@ -122,7 +123,7 @@ class DecMCTS_Agent():
         self.loc = start_loc
         self.loc_log = [start_loc]
         self.env = env
-        self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id), Point, queue_size=10)
+        self.pub_loc = rospy.Publisher('robot_loc_' + str(robot_id) + "_" + name, Point, queue_size=10)
         self.comms_drop = comms_drop
         self.comms_drop_rate = comms_drop_rate
         self.complete = False

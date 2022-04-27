@@ -43,7 +43,7 @@ colour_order = [Colour.Red, Colour.Blue, Colour.Green, Colour.Cyan, Colour.Yello
 
 
 class Environment():
-    def __init__(self, width, height, goal, num_robots, render_interval=0.5, seed=None):
+    def __init__(self, width, height, goal, num_robots, render_interval=0.5, seed=None, name="default"):
         self.width = width + 2
         self.height = height + 2
         self.walls = maze_gen.generate_maze(height, width, seed=seed)
@@ -55,6 +55,7 @@ class Environment():
         self.robot_colors = {}
         self.grid_size = 20
         self.num_robots = num_robots
+        self.name = name
 
         pygame.init()
         self.gameDisplay = pygame.display.set_mode((self.width*self.grid_size, self.width*self.grid_size),pygame.HIDDEN)
@@ -139,4 +140,4 @@ class Environment():
         '''
         for robot_id in self.robot_list.keys():
             print("Added listener ","robot_loc_",robot_id)
-            rospy.Subscriber('robot_loc_' + str(robot_id), Point, self.update_loc, robot_id)
+            rospy.Subscriber('robot_loc_' + str(robot_id) + "_" + self.name, Point, self.update_loc, robot_id)
