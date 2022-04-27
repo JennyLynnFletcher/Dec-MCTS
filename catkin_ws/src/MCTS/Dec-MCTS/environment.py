@@ -57,7 +57,7 @@ class Environment():
         self.robot_list = {}
         self.robot_colors = {}
         self.obss = {}
-        self.grid_size = 50
+        self.grid_size = 20
         self.num_robots = num_robots
 
         pygame.init()
@@ -130,17 +130,11 @@ class Environment():
             if obs_pos[1] < 0:
                 obs_pos[1] = obs_pos[0]
                 obs_pos[0] = 0
-            rect = (
-                obs_pos[1] * self.grid_size * self.width,
-                obs_pos[0] * self.grid_size * self.height,
-                self.grid_size * self.width,
-                self.grid_size * self.height
-            )
-            pygame.draw.rect(self.gameDisplay, (128, 128, 128), rect, width=0)
+            print(*obs_pos, len(self.obss[robot_id]))
             for path_y, path_x, value in zip(*sparse.find(self.obss[robot_id])):
                 rect = (
-                    (path_x - 0.5 + obs_pos * self.width) * self.grid_size,
-                    (path_y - 0.5 + obs_pos * self.height) * self.grid_size,
+                    (path_x - 0.5 + obs_pos[0] * self.width) * self.grid_size,
+                    (path_y - 0.5 + obs_pos[1] * self.height) * self.grid_size,
                     self.grid_size,
                     self.grid_size
                 )
@@ -150,7 +144,6 @@ class Environment():
         #pygame.display.update()
 
     def update_obs(self, obs_msg, robot_id):
-        pdb.set_trace()
         message = pickle.loads(codecs.decode(obs_msg.data.encode(), 'base64'))
         self.obss[robot_id] = message
         self.render()

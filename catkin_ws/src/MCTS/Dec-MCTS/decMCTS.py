@@ -307,7 +307,8 @@ class DecMCTS_Agent():
         else:
             self.observations_list[y, x + 1] = 1
         self.observations_list[y, x] = 1
-        self.pub_obs.publish(codecs.encode(pickle.dumps(self.observations_list), "base64").decode())
+        message = codecs.encode(pickle.dumps(self.observations_list), "base64").decode()
+        self.pub_obs.publish(message)
 
     def cool_beta(self):
         self.beta = self.beta * 0.9
