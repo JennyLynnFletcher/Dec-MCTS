@@ -208,13 +208,11 @@ class DecMCTS_Agent():
         return probs
 
     def package_comms(self, probs):
-        print(self.robot_id, " has probability sum ", sum(list(probs.values())),"and length",len(probs.values()))
         return Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time())
 
     def unpack_comms(self):
         for message_str in self.reception_queue:
             message = pickle.loads(codecs.decode(message_str.data.encode(), 'base64'))
-            print(self.robot_id,"receiving message from",message.robot_id,"with probability sum",sum(list(message.probs.values())))
             if message.robot_id != self.robot_id:
                 distance = max(
                     math.sqrt((message.state.loc[0] - self.loc[0]) ** 2 + (message.state.loc[1] - self.loc[1]) ** 2), 1)
@@ -239,7 +237,7 @@ class DecMCTS_Agent():
         # Filter out-of-date messages
         if self.out_of_date_timeout is not None:
             new_other_agent = {}
-            for k, v in self.other_agent_info:
+            for k, v in self.other_agent_info.items():
                 if v.time + self.out_of_date_timeout >= time:
                     new_other_agent[k] = v
                 else:
@@ -317,7 +315,6 @@ class DecMCTS_Agent():
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
     def update_distribution(self, probs):
-        print("before:",len(probs.keys()))
 
         args = [(node, probs, self.distribution_sample_iterations, self.other_agent_info,
                  self.determinization_iterations,
@@ -325,14 +322,12 @@ class DecMCTS_Agent():
                  self.env.get_goal(), self.comms_aware_planning, self.beta) for node in list(probs.keys())]
 
         newprobs = list(map(get_new_prob, args))
-        print("during: ",len(newprobs))
         probs = {}
 
         # normalize
         factor = sum([prob for node, prob in newprobs])
         for node, prob in newprobs:
             probs[node] = prob / factor
-        print("after",len(probs.keys()),sum(list(probs.values())))
         return probs
 
 
