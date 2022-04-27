@@ -1,3 +1,3 @@
 # Dec-MCTS
 
-run `source /opt/ros/noetic/setup.bash` before running `jupyter notebook`
+Python implementation of Dec-MCTS used for decentralised maze traversal. Communication is based on ROS topics. Rendering in `pygame`.
