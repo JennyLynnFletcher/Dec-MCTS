@@ -1,3 +1,6 @@
+import codecs
+import pdb
+import pickle
 import random
 from enum import Enum
 
@@ -54,11 +57,11 @@ class Environment():
         self.robot_list = {}
         self.robot_colors = {}
         self.obss = {}
-        self.grid_size = 20
+        self.grid_size = 50
         self.num_robots = num_robots
 
         pygame.init()
-        self.gameDisplay = pygame.display.set_mode((self.width*self.grid_size, self.width*self.grid_size))
+        self.gameDisplay = pygame.display.set_mode((self.width*self.grid_size*3, self.width*self.grid_size*3))
         self.render()
 
     def get_goal(self):
@@ -127,6 +130,13 @@ class Environment():
             if obs_pos[1] < 0:
                 obs_pos[1] = obs_pos[0]
                 obs_pos[0] = 0
+            rect = (
+                obs_pos[1] * self.grid_size * self.width,
+                obs_pos[0] * self.grid_size * self.height,
+                self.grid_size * self.width,
+                self.grid_size * self.height
+            )
+            pygame.draw.rect(self.gameDisplay, (128, 128, 128), rect, width=0)
             for path_y, path_x, value in zip(*sparse.find(self.obss[robot_id])):
                 rect = (
                     (path_x - 0.5 + obs_pos * self.width) * self.grid_size,
@@ -139,8 +149,10 @@ class Environment():
 
         #pygame.display.update()
 
-    def update_obs(self, obs, robot_id):
-        self.obss[robot_id] = obs
+    def update_obs(self, obs_msg, robot_id):
+        pdb.set_trace()
+        message = pickle.loads(codecs.decode(obs_msg.data.encode(), 'base64'))
+        self.obss[robot_id] = message
         self.render()
 
     def update_loc(self, loc_msg, robot_id):
@@ -162,3 +174,4 @@ class Environment():
         for robot_id in self.robot_list.keys():
             print("Added listener ","robot_loc_",robot_id)
             rospy.Subscriber('robot_loc_' + str(robot_id), Point, self.update_loc, robot_id)
+            rospy.Subscriber('robot_obs_' + str(robot_id), String, self.update_obs, robot_id)

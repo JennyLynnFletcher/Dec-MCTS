@@ -1,5 +1,6 @@
 import math
 import os
+import pdb
 import random
 import threading
 import time
@@ -140,7 +141,8 @@ class DecMCTS_Agent():
         self.tree = None
         self.Xrn = []
         self.reception_queue = []
-        self.pub_obs = rospy.Publisher('robot_obs', String, queue_size=10)
+        self.pub_obs = rospy.Publisher('robot_obs_' + str(robot_id), String, queue_size=10)
+        self.pub_probs = rospy.Publisher('robot_probs', String, queue_size=10)
         self.update_iterations = 0
         self.prob_update_iterations = prob_update_iterations
         self.plan_growth_iterations = plan_growth_iterations
@@ -262,7 +264,7 @@ class DecMCTS_Agent():
                 # print(str(self.robot_id) + " computing probs, " + str(i))
                 self.update_distribution(probs)
                 message = self.package_comms(probs)
-                self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
+                self.pub_probs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
             # print(str(self.robot_id) + " unpacking comms, "+ str(i))
             self.unpack_comms()
@@ -305,6 +307,7 @@ class DecMCTS_Agent():
         else:
             self.observations_list[y, x + 1] = 1
         self.observations_list[y, x] = 1
+        self.pub_obs.publish(codecs.encode(pickle.dumps(self.observations_list), "base64").decode())
 
     def cool_beta(self):
         self.beta = self.beta * 0.9

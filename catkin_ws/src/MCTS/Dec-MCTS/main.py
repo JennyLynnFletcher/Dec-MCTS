@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import threading
 import os
 import random
@@ -45,7 +45,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default"):
     random.seed()
     for robot_id, start_location in enumerate(robot_start_locations):
         env.add_robot(robot_id, start_location, goal)
-        rospy.Subscriber("robot_obs", String, lambda x: robots[-1].reception_queue.append(x))
+        rospy.Subscriber("robot_probs", String, lambda x: robots[-1].reception_queue.append(x))
 
     env.set_up_listener()
 
