@@ -37,7 +37,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
     random.seed(seed)
     goal = (random.randrange(0, width // 2) * 2 + 1, random.randrange(0, height // 2) * 2 + 1)
     print("Goal: ", goal)
-    env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=seed)
+    env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=seed, name=name)
 
 
     robot_start_locations = []
@@ -50,6 +50,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
     robots = []
     for robot_id, start_location in enumerate(robot_start_locations):
         env.add_robot(robot_id, start_location, goal)
+        rospy.Subscriber('robot_obs_'+name, String, lambda x: robots[-1].reception_queue.append(x))
 
     env.set_up_listener()
 
@@ -57,7 +58,8 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
         robots.append(decMCTS.DecMCTS_Agent(robot_id=robot_id, start_loc=start_location, goal_loc=goal, env=env,
                                             comms_drop="distance", comms_drop_rate=0.9,
                                             comms_aware_planning=comms_aware,
-                                            out_of_date_timeout=out_of_date_timeout))
+                                            out_of_date_timeout=out_of_date_timeout,
+                                            name=name))
 
     i = -1
     frames = 0
