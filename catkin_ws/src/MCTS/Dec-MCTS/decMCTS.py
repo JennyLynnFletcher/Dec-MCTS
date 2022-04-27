@@ -87,7 +87,8 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
     return our_actions, other_actions, our_q, other_qs, our_obs
 
 
-def get_new_prob(i, node,probs,distribution_sample_iterations,other_agent_info,determinization_iterations,robot_id,observations_list,loc,horizon,time,goal,comms_aware_planning,beta):
+def get_new_prob(x):
+    i, node, probs, distribution_sample_iterations, other_agent_info, determinization_iterations, robot_id, observations_list, loc, horizon, time, goal, comms_aware_planning, beta = x
     #print("updating probability for node " + str(i) +" of "+str(len(probs))+" on pid "+str(os.getpid()))
     q = probs[node]
     e_f = 0
