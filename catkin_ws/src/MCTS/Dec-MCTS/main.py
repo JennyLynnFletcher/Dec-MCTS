@@ -95,7 +95,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
     with open('./results.txt', 'a') as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         f.write("Seed: " + str(seed) + " comms_aware: " + str(comms_aware) + " num_robots: " + str(num_robots) + " Iterations: " + str(i) + " Times forgot other agent: "
-                + str([agent.times_removed_other_agent for agent in robots]))
+                + str([agent.times_removed_other_agent for agent in robots])+"\n")
         fcntl.flock(f, fcntl.LOCK_UN)
 
 if __name__ == "__main__":
