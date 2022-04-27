@@ -104,3 +104,6 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+
+catkin_ws/output
+catkin_ws/logs
