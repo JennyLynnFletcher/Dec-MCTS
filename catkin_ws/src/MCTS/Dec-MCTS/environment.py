@@ -58,7 +58,7 @@ class Environment():
         self.num_robots = num_robots
 
         pygame.init()
-        self.gameDisplay = pygame.display.set_mode((self.width*self.grid_size, self.width*self.grid_size))
+        self.gameDisplay = pygame.display.set_mode((self.width*self.grid_size, self.width*self.grid_size),pygame.HIDDEN)
         self.render()
 
     def get_goal(self):

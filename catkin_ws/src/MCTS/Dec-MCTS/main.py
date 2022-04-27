@@ -66,7 +66,6 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
 
     complete = False
     while not complete:
-        pygame.display.update()
         is_execute_iteration = ((i % 2) == 0)
         i += 1
         threads = []
@@ -85,9 +84,9 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
         complete = True
         for r in robots:
             complete = complete and r.complete
-        pygame.display.update()
         if is_execute_iteration:
             frames += 1
+            pygame.display.update()
             pygame.image.save(env.gameDisplay, "output/" + name + "/frame_" + str(frames) + ".jpg")
 
     pygame.quit()

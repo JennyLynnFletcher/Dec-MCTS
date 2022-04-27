@@ -222,6 +222,7 @@ class DecMCTS_Agent():
             elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate / (distance) ** 2:
                 pass
                 #print("Packet drop")
+
             else:
                 robot_id = message.robot_id
                 # If seen before
@@ -349,6 +350,7 @@ class DecMCTSNode():
         self.children = []
         self.Xrn = Xrn
         self.maze_dims = maze_dims
+        self.comms_aware_planning = comms_aware_planning
 
         # Incremented during backpropagation
         self.discounted_visits = 0
@@ -463,7 +465,6 @@ class DecMCTSNode():
             avg += compute_f(this_id, node_actions, other_agent_policies, real_obs, start_state.loc, self.state.obs,
                              other_agent_info, horizon_time, time, goal,
                              comms_aware_planning=self.comms_aware_planning) / determinization_iterations
-
         return avg
 
 

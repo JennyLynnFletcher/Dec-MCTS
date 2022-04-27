@@ -7,7 +7,11 @@ fi
 
 
 . ./devel/setup.bash
+<<<<<<< HEAD
 source venv/bin/activate
+=======
+
+>>>>>>> setup to run multiple versions concurrently that works on my PC
 end=$(expr $1 + 100)
 for i in $(seq $1 $end)
 do
