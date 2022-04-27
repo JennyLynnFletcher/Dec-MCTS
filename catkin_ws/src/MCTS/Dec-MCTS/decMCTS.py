@@ -183,6 +183,8 @@ class DecMCTS_Agent():
             elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate/(distance)**2:
                 #print("Packet drop")
                 pass
+            elif message.robot_id == self.robot_id:
+                pass
             else:
                 robot_id = message.robot_id
                 # If seen before
