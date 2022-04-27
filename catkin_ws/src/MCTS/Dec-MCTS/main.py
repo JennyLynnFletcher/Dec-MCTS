@@ -50,7 +50,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
     robots = []
     for robot_id, start_location in enumerate(robot_start_locations):
         env.add_robot(robot_id, start_location, goal)
-        rospy.Subscriber('robot_obs_'+name, String, lambda x: robots[-1].reception_queue.append(x))
+        #rospy.Subscriber('robot_obs_'+name, String, lambda x: robots[-1].reception_queue.append(x))
 
     env.set_up_listener()
 
