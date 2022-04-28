@@ -23,7 +23,7 @@ def get_lists():
                     split = line.split(" ")
                     seed.append(int(split[1]))
                     comms_aware.append(split[3] == "True")
-                    iterations.append(int(split[7]))
+                    iterations.append((int(split[7])+1)/2) # The maths is because we record thinking iterations -1
 
     return seed, comms_aware, iterations
 
