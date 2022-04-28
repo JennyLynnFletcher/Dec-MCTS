@@ -101,13 +101,13 @@ def get_new_prob(x):
         for _ in range(determinization_iterations // 2):
             f += compute_f(robot_id, our_actions, other_actions, observations_list, loc, our_obs,
                            other_agent_info, horizon, time, goal,
-                           comms_aware_planning=comms_aware_planning, completed=complete) \
+                           comms_aware_planning=comms_aware_planning, complete=complete) \
                  / (determinization_iterations // 2)
 
             f_x += compute_f(robot_id, node.get_action_sequence(), other_actions, observations_list,
                              loc, our_obs,
                              other_agent_info, horizon, time, goal,
-                             comms_aware_planning=comms_aware_planning, completed=complete) \
+                             comms_aware_planning=comms_aware_planning, complete=complete) \
                    / (determinization_iterations // 2)
 
         e_f += np.prod(list(other_qs.values()) + [our_q]) * f
@@ -449,7 +449,7 @@ class DecMCTSNode():
         return start_state, node_actions
 
     def perform_rollout(self, this_id, other_agent_policies, other_agent_info, real_obs, horizon, time,
-                        determinization_iterations, goal, completed):
+                        determinization_iterations, goal, complete):
 
         horizon_time = time + self.depth + horizon
         start_state, node_actions = self.tree_history()
@@ -460,20 +460,20 @@ class DecMCTSNode():
             avg += compute_f(this_id, node_actions, other_agent_policies, real_obs, start_state.loc, self.state.obs,
                              other_agent_info, horizon_time, time, goal,
                              comms_aware_planning=self.comms_aware_planning,
-                             completed=completed) / determinization_iterations
+                             complete=complete) / determinization_iterations
         return avg
 
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
-              current_time, goal, comms_aware_planning, completed):
+              current_time, goal, comms_aware_planning, complete):
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
-        maze.add_robot(id, agent.state.loc, agent.state.completed)
+        maze.add_robot(id, agent.state.loc, agent.state.complete)
         maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
 
     # Score if we took no actions
-    maze.add_robot(our_id, our_loc, completed)
+    maze.add_robot(our_id, our_loc, complete)
     null_score = maze.get_score(real_obs, comms_aware_planning=comms_aware_planning)
 
     # Score if we take our actual actions (simulates future plans)

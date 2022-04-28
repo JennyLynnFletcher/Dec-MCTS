@@ -7,7 +7,7 @@ fi
 
 
 . ./devel/setup.bash
-#source venv/bin/activate
+source venv/bin/activate
 
 
 end=$(expr $1 + 100)

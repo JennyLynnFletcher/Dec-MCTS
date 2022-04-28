@@ -10,7 +10,7 @@ class Maze:
     def __init__(self, goal, maze_walls):
         self.goal = goal
         self.agent_positions = {}
-        self.completed = {}
+        self.complete = {}
         self.walls = maze_walls
 
     def simulate_i_steps(self, steps, agent_id, policy):
@@ -39,7 +39,7 @@ class Maze:
         if self.walls[new_position[1], new_position[0]]:
             self.agent_positions[agent_id] = tuple(new_position)
             if new_position[0] == self.goal[0] and new_position[1] == self.goal[1]:
-                self.completed[agent_id] = True
+                self.complete[agent_id] = True
             return True
         else:
             return False
@@ -99,7 +99,7 @@ class Maze:
 
         robot_distances = []
         for robot in self.agent_positions.keys():
-            if self.completed[robot]:
+            if self.complete[robot]:
                 robot_distances.append(0)
             else:
                 position = self.agent_positions[robot]
@@ -129,9 +129,9 @@ class Maze:
         return score
 
     # loc is (x,y) tuple
-    def add_robot(self, robot_id, loc, completed):
+    def add_robot(self, robot_id, loc, complete):
         self.agent_positions[robot_id] = loc
-        self.completed[robot_id] = completed
+        self.complete[robot_id] = complete
 
 
 class Action(Enum):
