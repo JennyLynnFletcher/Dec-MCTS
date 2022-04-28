@@ -90,11 +90,11 @@ class DecMCTS_Agent():
     # prob_update_iterations * probs_size * determinationization_iterations * distribution_sample_iterations
     def __init__(self, robot_id, start_loc, goal_loc, env,
                  horizon=10,
-                 prob_update_iterations=5,
-                 plan_growth_iterations=30,
+                 prob_update_iterations=4,
+                 plan_growth_iterations=10,
                  distribution_sample_iterations=3,
                  determinization_iterations=3,
-                 probs_size=10,
+                 probs_size=8,
                  out_of_date_timeout=None,
                  comms_drop=None,
                  comms_drop_rate=None,
@@ -235,8 +235,8 @@ class DecMCTS_Agent():
                 self.pub_obs.publish(codecs.encode(pickle.dumps(message), "base64").decode())
 
             # print(str(self.robot_id) + " unpacking comms, "+ str(i))
-            self.unpack_comms()
-            self.cool_beta()
+                self.unpack_comms()
+                self.cool_beta()
 
             # print(str(self.robot_id) + " done with iteration "+ str(i))
 

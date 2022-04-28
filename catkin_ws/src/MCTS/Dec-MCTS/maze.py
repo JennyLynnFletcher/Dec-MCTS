@@ -100,7 +100,7 @@ class Maze:
             
         # TODO: think about the weights on these things, for now they are all equal
         #  which is a really bad idea since percent explored < 1 and others are >> 1
-        score = - sum(robot_distances)/(len(robot_distances) * max_distance) + 10*percent_explored - goal_component_size_pct
+        score = - sum(robot_distances)/(len(robot_distances) * max_distance) + percent_explored - goal_component_size_pct
 
         if comms_aware_planning:
             max_dist = 0
@@ -138,6 +138,6 @@ class Action(Enum):
 
 def generate_maze(obs, goal):
     maze_walls = maze_gen.fill_in_maze(obs.copy())
-    maze_walls = maze_gen.fill_in_maze(maze_walls.maximum(obs.copy()))
+    #maze_walls = maze_gen.fill_in_maze(maze_walls.maximum(obs.copy()))
 
     return Maze((goal[1],goal[0]), maze_walls)

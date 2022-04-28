@@ -1,0 +1,13 @@
+ 
+No Comms drop ---- Seed: 100005 comms_aware: True num_robots: 5 Iterations: 31 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100005 comms_aware: False num_robots: 5 Iterations: 39 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100003 comms_aware: True num_robots: 5 Iterations: 51 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100001 comms_aware: True num_robots: 5 Iterations: 55 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100003 comms_aware: False num_robots: 5 Iterations: 55 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100002 comms_aware: True num_robots: 5 Iterations: 55 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100004 comms_aware: True num_robots: 5 Iterations: 59 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100004 comms_aware: False num_robots: 5 Iterations: 67 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100001 comms_aware: False num_robots: 5 Iterations: 67 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100002 comms_aware: False num_robots: 5 Iterations: 71 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100006 comms_aware: False num_robots: 5 Iterations: 95 Times forgot other agent: [0, 0, 0, 0, 0]
+No Comms drop ---- Seed: 100006 comms_aware: True num_robots: 5 Iterations: 131 Times forgot other agent: [0, 0, 0, 0, 0]

@@ -56,7 +56,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
 
     for robot_id, start_location in enumerate(robot_start_locations):
         robots.append(decMCTS.DecMCTS_Agent(robot_id=robot_id, start_loc=start_location, goal_loc=goal, env=env,
-                                            comms_drop="distance", comms_drop_rate=0.9,
+                                            comms_drop="distance", comms_drop_rate=0.8,
                                             comms_aware_planning=comms_aware,
                                             out_of_date_timeout=out_of_date_timeout,
                                             name=name))
