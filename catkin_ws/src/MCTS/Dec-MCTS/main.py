@@ -93,7 +93,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
         fcntl.flock(f, fcntl.LOCK_EX)
         f.write("Seed: " + str(seed) + " comms_aware: " + str(comms_aware) + " num_robots: " + str(
             num_robots) + " Iterations: " + str(i) + " Times forgot other agent: "
-                + str([agent.times_removed_other_agent for agent in robots]) + "\n")
+                + str([agent.missed_messages for agent in robots]) + "\n")
         fcntl.flock(f, fcntl.LOCK_UN)
 
 
