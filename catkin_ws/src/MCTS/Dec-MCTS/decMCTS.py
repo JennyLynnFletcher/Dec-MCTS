@@ -474,7 +474,6 @@ def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_o
 
     # Score if we took no actions
     maze.add_robot(our_id, our_loc, completed)
-    maze.add_robot(our_id, our_loc)
     null_score = maze.get_score(real_obs, comms_aware_planning=comms_aware_planning)
 
     # Score if we take our actual actions (simulates future plans)
