@@ -1,3 +1,4 @@
+import math
 from enum import Enum, auto
 import collections
 import random
@@ -37,7 +38,7 @@ class Maze:
             new_position[0] -= 1
         if self.walls[new_position[1], new_position[0]]:
             self.agent_positions[agent_id] = tuple(new_position)
-            #TODO check x,y  stuff
+            # TODO check x,y  stuff
             if new_position[0] == self.goal[0] and new_position[1] == self.goal[1]:
                 self.completed[agent_id] = True
             return True
@@ -53,11 +54,13 @@ class Maze:
         # t = time()
         w = self.walls.shape[1]
         h = self.walls.shape[0]
-        positions_all = list(self.agent_positions.values())
         n_xplored = (agent_obs == 1).getnnz()
 
         total_explorable_area = ((h - 2) * (w - 2) + h + w - 5) / 2
         percent_explored = n_xplored / total_explorable_area
+
+        max_straightline_distance = math.sqrt((h - 2)**2 + (w - 2)**2)
+
 
         # newt = time()
         # print(newt - t, "init")
@@ -74,8 +77,6 @@ class Maze:
         # newt = time()
         # print(newt - t, "bfs_init")
         # t = time()
-        for x, y in positions_all:
-            self.walls[y,x] = 1
 
         while bfs_queue:
             current = bfs_queue.pop()
@@ -83,11 +84,11 @@ class Maze:
             for dif in (-1, 1):
                 for neighbour in [(y + dif, x), (y, x + dif)]:
                     if neighbour in visited or (not self.walls[neighbour]):
-                        continue                    
+                        continue
                     visited.add(neighbour)
                     distance[neighbour] = distance[current] + 1
                     max_distance = max(distance[neighbour], max_distance)
-                    if (y,x) in goal_connected and not agent_obs[neighbour]:
+                    if (y, x) in goal_connected and not agent_obs[neighbour]:
                         goal_connected.add(neighbour)
                     bfs_queue.append(neighbour)
 
@@ -96,8 +97,6 @@ class Maze:
         # t = time()
 
         goal_component_size_pct = len(goal_connected) / total_explorable_area
-            
-        
 
         robot_distances = []
         for robot in self.agent_positions.keys():
@@ -109,26 +108,21 @@ class Maze:
                     robot_distances.append(distance[(position[1], position[0])])
                 else:
                     robot_distances.append(max_distance)
-            
 
-            
-        score = - sum(robot_distances)/(len(robot_distances) * max_distance) + 10*percent_explored - goal_component_size_pct
+        score = - sum(robot_distances) / (
+                    len(robot_distances) * max_distance) + percent_explored - goal_component_size_pct
 
         if comms_aware_planning:
             max_dist = 0
-            sum_dists = 0
-            n_dists = 0
-            for i in range(len(positions_all)):
-                for j in range(i):
-                    x1, y1 = positions_all[i]
-                    x2, y2 = positions_all[j]
+            for agent1, (x1, y1) in self.agent_positions.items():
+                min_dist_from_agent1 = math.inf
+                for agent2, (x2, y2) in self.agent_positions.items():
                     dist = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** (1 / 2)
+                    min_dist_from_agent1 = min(min_dist_from_agent1, dist)
+                if min_dist_from_agent1 >= max_dist:
+                    max_dist = min_dist_from_agent1
 
-                    max_dist = max(max_dist, dist)
-                    n_dists += 1
-                    sum_dists += dist
-
-            score -= max_dist / max_distance
+            score -= max_dist / max_straightline_distance
 
         # newt = time()
         # print(newt - t, "score")
@@ -153,4 +147,4 @@ def generate_maze(obs, goal):
     maze_walls = maze_gen.fill_in_maze(obs.copy())
     maze_walls = maze_gen.fill_in_maze(maze_walls.maximum(obs.copy()))
 
-    return Maze((goal[1],goal[0]), maze_walls)
+    return Maze((goal[1], goal[0]), maze_walls)
