@@ -38,7 +38,6 @@ class Maze:
             new_position[0] -= 1
         if self.walls[new_position[1], new_position[0]]:
             self.agent_positions[agent_id] = tuple(new_position)
-            # TODO check x,y  stuff
             if new_position[0] == self.goal[0] and new_position[1] == self.goal[1]:
                 self.completed[agent_id] = True
             return True
