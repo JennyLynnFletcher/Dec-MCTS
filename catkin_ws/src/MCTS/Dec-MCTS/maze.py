@@ -37,6 +37,9 @@ class Maze:
             new_position[0] -= 1
         if self.walls[new_position[1], new_position[0]]:
             self.agent_positions[agent_id] = tuple(new_position)
+            #TODO check x,y  stuff
+            if new_position[0] == self.goal[0] and new_position[1] == self.goal[1]:
+                self.completed[agent_id] = True
             return True
         else:
             return False
@@ -95,12 +98,20 @@ class Maze:
         goal_component_size_pct = len(goal_connected) / total_explorable_area
             
         
-        robot_distances = [distance[(position[1], position[0])] if (position[1], position[0]) in distance.keys() else max_distance for position in positions_all]
+
+        robot_distances = []
+        for robot in self.agent_positions.keys():
+            if self.completed[robot]:
+                robot_distances.append(0)
+            else:
+                position = self.agent_positions[robot]
+                if (position[1], position[0]) in distance.keys():
+                    robot_distances.append(distance[(position[1], position[0])])
+                else:
+                    robot_distances.append(max_distance)
             
 
             
-        # TODO: think about the weights on these things, for now they are all equal
-        #  which is a really bad idea since percent explored < 1 and others are >> 1
         score = - sum(robot_distances)/(len(robot_distances) * max_distance) + 10*percent_explored - goal_component_size_pct
 
         if comms_aware_planning:

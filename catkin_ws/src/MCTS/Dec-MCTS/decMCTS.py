@@ -87,7 +87,8 @@ def uniform_sample_from_all_action_sequences(probs, other_agent_info):
 
 
 def get_new_prob(x):
-    node, probs, distribution_sample_iterations, other_agent_info, determinization_iterations, robot_id, observations_list, loc, horizon, time, goal, comms_aware_planning, beta = x
+    node, probs, distribution_sample_iterations, other_agent_info, determinization_iterations, robot_id, \
+    observations_list, loc, horizon, time, goal, comms_aware_planning, beta, complete = x
     q = probs[node]
     e_f = 0
     e_f_x = 0
@@ -100,13 +101,13 @@ def get_new_prob(x):
         for _ in range(determinization_iterations // 2):
             f += compute_f(robot_id, our_actions, other_actions, observations_list, loc, our_obs,
                            other_agent_info, horizon, time, goal,
-                           comms_aware_planning=comms_aware_planning) \
+                           comms_aware_planning=comms_aware_planning, completed=complete) \
                  / (determinization_iterations // 2)
 
             f_x += compute_f(robot_id, node.get_action_sequence(), other_actions, observations_list,
                              loc, our_obs,
                              other_agent_info, horizon, time, goal,
-                             comms_aware_planning=comms_aware_planning) \
+                             comms_aware_planning=comms_aware_planning, completed=complete) \
                    / (determinization_iterations // 2)
 
         e_f += np.prod(list(other_qs.values()) + [our_q]) * f
@@ -141,7 +142,7 @@ class DecMCTS_Agent():
         self.Xrn = []
         self.reception_queue = []
         self.pub_obs = rospy.Publisher('robot_obs_' + name, String, queue_size=20)
-        self.pub_obs = rospy.Publisher('robot_obs_'+name, String, queue_size=10)
+        self.pub_obs = rospy.Publisher('robot_obs_' + name, String, queue_size=10)
         self.update_iterations = 0
         self.prob_update_iterations = prob_update_iterations
         self.plan_growth_iterations = plan_growth_iterations
@@ -194,13 +195,15 @@ class DecMCTS_Agent():
             other_agent_policies = self.sample_other_agents()
             score = node.perform_rollout(self.robot_id, other_agent_policies, self.other_agent_info,
                                          self.observations_list, self.horizon,
-                                         self.get_time(), self.determinization_iterations, self.env.get_goal())
+                                         self.get_time(), self.determinization_iterations, self.env.get_goal(),
+                                         self.complete)
             node.backpropagate(score, i)
 
     def reset_tree(self):
         self.Xrn = []
         self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0,
-                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn, comms_aware_planning=self.comms_aware_planning)
+                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn,
+                                comms_aware_planning=self.comms_aware_planning)
 
     def get_Xrn_probs(self):
         self.Xrn.sort(reverse=True, key=(lambda node: node.discounted_score))
@@ -320,8 +323,8 @@ class DecMCTS_Agent():
         args = [(node, probs, self.distribution_sample_iterations, self.other_agent_info,
                  self.determinization_iterations,
                  self.robot_id, self.observations_list, self.loc, self.horizon, self.get_time(),
-                 self.env.get_goal(), self.comms_aware_planning, self.beta) for node in list(probs.keys())]
-
+                 self.env.get_goal(), self.comms_aware_planning, self.beta, self.complete) for node in
+                list(probs.keys())]
 
         newprobs = list(map(get_new_prob, args))
         probs = {}
@@ -446,7 +449,7 @@ class DecMCTSNode():
         return start_state, node_actions
 
     def perform_rollout(self, this_id, other_agent_policies, other_agent_info, real_obs, horizon, time,
-                        determinization_iterations, goal):
+                        determinization_iterations, goal, completed):
 
         horizon_time = time + self.depth + horizon
         start_state, node_actions = self.tree_history()
@@ -456,20 +459,21 @@ class DecMCTSNode():
         for _ in range(determinization_iterations):
             avg += compute_f(this_id, node_actions, other_agent_policies, real_obs, start_state.loc, self.state.obs,
                              other_agent_info, horizon_time, time, goal,
-                             comms_aware_planning=self.comms_aware_planning) / determinization_iterations
+                             comms_aware_planning=self.comms_aware_planning,
+                             completed=completed) / determinization_iterations
         return avg
 
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
-              current_time, goal, comms_aware_planning,completed):
+              current_time, goal, comms_aware_planning, completed):
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
-        maze.add_robot(id, agent.state.loc,agent.state.completed)
+        maze.add_robot(id, agent.state.loc, agent.state.completed)
         maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
 
     # Score if we took no actions
-    maze.add_robot(our_id, our_loc,completed)
+    maze.add_robot(our_id, our_loc, completed)
     maze.add_robot(our_id, our_loc)
     null_score = maze.get_score(real_obs, comms_aware_planning=comms_aware_planning)
 
