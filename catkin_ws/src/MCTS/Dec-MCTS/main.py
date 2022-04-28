@@ -39,6 +39,7 @@ def main(comms_aware=True, num_robots=3, seed=0, name="default", out_of_date_tim
     print("Goal: ", goal)
     env = environment.Environment(width, height, goal, num_robots, render_interval=1, seed=seed, name=name)
 
+
     robot_start_locations = []
     for _ in range(num_robots):
         loc = (random.randrange(0, width // 2) * 2 + 1, random.randrange(0, height // 2) * 2 + 1)

@@ -141,6 +141,7 @@ class DecMCTS_Agent():
         self.Xrn = []
         self.reception_queue = []
         self.pub_obs = rospy.Publisher('robot_obs_' + name, String, queue_size=20)
+        self.pub_obs = rospy.Publisher('robot_obs_'+name, String, queue_size=10)
         self.update_iterations = 0
         self.prob_update_iterations = prob_update_iterations
         self.plan_growth_iterations = plan_growth_iterations
@@ -199,8 +200,7 @@ class DecMCTS_Agent():
     def reset_tree(self):
         self.Xrn = []
         self.tree = DecMCTSNode(Agent_State(self.loc, self.observations_list), depth=0,
-                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn,
-                                comms_aware_planning=self.comms_aware_planning)
+                                maze_dims=(self.env.height, self.env.width), Xrn=self.Xrn, comms_aware_planning=self.comms_aware_planning)
 
     def get_Xrn_probs(self):
         self.Xrn.sort(reverse=True, key=(lambda node: node.discounted_score))
@@ -225,7 +225,6 @@ class DecMCTS_Agent():
                 elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate / (distance ** 2):
                     self.missed_messages += 1
                     # print("Packet drop")
-
                 else:
                     robot_id = message.robot_id
                     # If seen before
@@ -318,11 +317,11 @@ class DecMCTS_Agent():
         return {i: agent.select_random_plan() for (i, agent) in self.other_agent_info.items()}
 
     def update_distribution(self, probs):
-
         args = [(node, probs, self.distribution_sample_iterations, self.other_agent_info,
                  self.determinization_iterations,
                  self.robot_id, self.observations_list, self.loc, self.horizon, self.get_time(),
                  self.env.get_goal(), self.comms_aware_planning, self.beta) for node in list(probs.keys())]
+
 
         newprobs = list(map(get_new_prob, args))
         probs = {}
@@ -462,7 +461,7 @@ class DecMCTSNode():
 
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
-              current_time, goal, comms_aware_planning,complete):
+              current_time, goal, comms_aware_planning,completed):
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
@@ -471,6 +470,7 @@ def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_o
 
     # Score if we took no actions
     maze.add_robot(our_id, our_loc,completed)
+    maze.add_robot(our_id, our_loc)
     null_score = maze.get_score(real_obs, comms_aware_planning=comms_aware_planning)
 
     # Score if we take our actual actions (simulates future plans)
