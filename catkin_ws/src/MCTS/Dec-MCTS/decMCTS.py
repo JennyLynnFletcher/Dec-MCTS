@@ -57,11 +57,12 @@ def update_agent_state(state, action):
 
 
 class Agent_Info():
-    def __init__(self, robot_id, state, probs, time):
+    def __init__(self, robot_id, state, probs, time, complete):
         self.state = state  # Agent_State
         self.probs = probs  # dict
         self.time = time  # int
         self.robot_id = robot_id  # arbitrary
+        self.complete = complete
 
     def select_random_plan(self):
         return np.random.choice(list(self.probs.keys()), p=list(self.probs.values())).get_action_sequence()
@@ -161,6 +162,7 @@ class DecMCTS_Agent():
         self.comms_drop = comms_drop
         self.comms_drop_rate = comms_drop_rate
         self.complete = False
+        self.missed_messages = 0
 
         self.observations_list = sparse.dok_matrix((self.env.height, self.env.width))
         self.add_edges_to_observations()
@@ -208,7 +210,8 @@ class DecMCTS_Agent():
         return probs
 
     def package_comms(self, probs):
-        return Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time())
+        return Agent_Info(self.robot_id, Agent_State(self.loc, self.observations_list), probs, self.get_time()
+                          , self.complete)
 
     def unpack_comms(self):
         for message_str in self.reception_queue:
@@ -217,10 +220,10 @@ class DecMCTS_Agent():
                 distance = max(
                     math.sqrt((message.state.loc[0] - self.loc[0]) ** 2 + (message.state.loc[1] - self.loc[1]) ** 2), 1)
                 if self.comms_drop == "uniform" and random.random() < self.comms_drop_rate:
-                    pass
+                    self.missed_messages += 1
                     # print("Packet drop")
-                elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate / (distance) ** 2:
-                    pass
+                elif self.comms_drop == "distance" and random.random() < self.comms_drop_rate / (distance ** 2):
+                    self.missed_messages += 1
                     # print("Packet drop")
 
                 else:
@@ -329,7 +332,6 @@ class DecMCTS_Agent():
         for node, prob in newprobs:
             probs[node] = prob / factor
         return probs
-
 
 
 class DecMCTSNode():
@@ -460,15 +462,15 @@ class DecMCTSNode():
 
 
 def compute_f(our_id, our_policy, other_agent_policies, real_obs, our_loc, our_obs, other_agent_info, steps,
-              current_time, goal, comms_aware_planning):
+              current_time, goal, comms_aware_planning,complete):
     maze = m.generate_maze(our_obs, goal)
     # Simulate each agent separately (simulates both history and future plans)
     for id, agent in other_agent_info.items():
-        maze.add_robot(id, agent.state.loc)
+        maze.add_robot(id, agent.state.loc,agent.state.completed)
         maze.simulate_i_steps(steps - agent.time, id, other_agent_policies[id])
 
     # Score if we took no actions
-    maze.add_robot(our_id, our_loc)
+    maze.add_robot(our_id, our_loc,completed)
     null_score = maze.get_score(real_obs, comms_aware_planning=comms_aware_planning)
 
     # Score if we take our actual actions (simulates future plans)
